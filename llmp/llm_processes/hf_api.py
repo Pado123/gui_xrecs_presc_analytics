@@ -7,13 +7,16 @@ from transformers import (
 import torch
 
 llm_map = {
-    "llama-2-7B": "meta-llama/Llama-2-7b",
+    "llama-2-7B": "meta-llama/Llama-2-7b-hf",
     "llama-2-70B": "meta-llama/Llama-2-70b",
     "llama-3-8B": "meta-llama/Meta-Llama-3-8B",
     "llama-3-70B": "meta-llama/Meta-Llama-3-70B",
+    "llama-3.1-70B": "meta-llama/Meta-Llama-3.1-70B",
+    "llama-3.1-70B-instruct": "meta-llama/Meta-Llama-3.1-70B-Instruct",
     "mixtral-8x7B": "mistralai/Mixtral-8x7B-v0.1",
     "mixtral-8x7B-instruct": "mistralai/Mixtral-8x7B-Instruct-v0.1",
     "phi-3-mini-128k-instruct": "microsoft/Phi-3-mini-128k-instruct",
+    # "llama-3.1-Nemotron-70B": "nvidia/Llama-3.1-Nemotron-70B-Instruct-HF", TODO Fix below about retrival
 }
 
 
@@ -41,6 +44,7 @@ def get_tokenizer(llm_path, llm_type):
         tokenizer = AutoTokenizer.from_pretrained(
             llm_path,
             trust_remote_code=True,
+            attn_implementation="flash_attention_2"
         )
     elif "mixtral" in llm_type:
         tokenizer = AutoTokenizer.from_pretrained(
@@ -85,6 +89,7 @@ def get_model_and_tokenizer(llm_path, llm_type):
             device_map="cuda",
             torch_dtype="auto",
             trust_remote_code=True,
+            attn_implementation="flash_attention_2"
         )
     elif "mixtral" in llm_type:
         model = AutoModelForCausalLM.from_pretrained(

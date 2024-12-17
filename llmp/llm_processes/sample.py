@@ -11,6 +11,13 @@ def sample(args, tokenizer, model, results):
     with torch.no_grad():
         # generate
         results['gen'] = [[] for _ in range(len(results['data']['x_test']))]
+        
+        # Get chat template if available
+        chat_template = getattr(tokenizer, 'chat_template', None)
+        
+        # Check if we should continue final message
+        continue_final_message = True if chat_template is not None else False
+        
         if args.autoregressive:
             x_train_current = [results['data']['x_train']] * args.num_samples
             y_train_current = [results['data']['y_train']] * args.num_samples
@@ -40,6 +47,7 @@ def sample(args, tokenizer, model, results):
                             order=args.prompt_ordering,
                             add_spaces=False,
                             x_ordering=results['data']['x_ordering'] if 'x_ordering' in results['data'] else None,
+                            chat_template=chat_template
                         )
                         batch_prompts.append(prompt[0])
 
@@ -49,7 +57,8 @@ def sample(args, tokenizer, model, results):
                         prompts=batch_prompts,
                         temp=args.temperature, 
                         top_p=args.top_p,
-                        max_new_tokens=args.max_generated_length
+                        max_new_tokens=args.max_generated_length,
+                        continue_final_message=continue_final_message
                     )
                     assert(len(res) == len(batch_indices))
                     for i, sample_index in enumerate(batch_indices):
@@ -97,6 +106,8 @@ def sample(args, tokenizer, model, results):
                 order=args.prompt_ordering,
                 add_spaces=False,
                 x_ordering=results['data']['x_ordering'] if 'x_ordering' in results['data'] else None,
+                chat_template=chat_template,
+                tokenizer=tokenizer
             )
 
             num_prompts = len(prompts)
@@ -123,7 +134,7 @@ def sample(args, tokenizer, model, results):
                             max_generated_length=args.max_generated_length,
                             num_decimal_places_y=args.num_decimal_places_y
                             ) is not None:
-                            samples.append(res[j])
+                            samples.append(res[j]) # these are raw outputs
                             num_samples -= 1
                 results['gen'][idx] += samples
 

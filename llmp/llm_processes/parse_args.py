@@ -3,12 +3,12 @@ from jsonargparse import ArgumentParser, ActionConfigFile
 from .hf_api import llm_map
 
 def init_option_parser():
-    parser = ArgumentParser()
+    parser = ArgumentParser(default_config_files=['./config/default_cfg.yaml'])
     parser.add_argument('--cfg', action=ActionConfigFile, help='config file in YAML format')
     parser.add_argument("--mode", choices=["sample_logpy", "sample_only", "logpy_only"], default="sample_logpy",
                         help="Whether to sample or compute log likelihood, or both.")
     parser.add_argument('--experiment_name', type=str, default='test', help='Name of the experiment.')
-    parser.add_argument('--data_path', type=str, default='./data/square_20.pkl', help='Path to pkl file with x, y data.')
+    parser.add_argument('--data_path', type=str, default='./data/functions/square_20_seed_0.pkl', help='Path to pkl file with x, y data.')
     parser.add_argument('--llm_path', type=str, default=None, help='Path to LLM.')
     parser.add_argument("--llm_type", choices=llm_map.keys(), default="llama-2-7B",
                         help="Hugging face model to use.")

@@ -1,5 +1,7 @@
 import numpy as np
 import os
+import locale
+locale.setlocale(locale.LC_ALL, 'en_US.UTF-8')
 
 
 from .plot import plot_samples, plot_images, plot_heatmap
@@ -8,9 +10,14 @@ from .parse_args import parse_command_line
 from .compute_nll import compute_nll
 from .sample import sample
 from .prepare_data import prepare_data
+import torch
 
 
 def run_llm_process(args, model, tokenizer):
+    # Clean up CUDA memory
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
+
     np.random.seed(args.seed)
 
     # create the output directory

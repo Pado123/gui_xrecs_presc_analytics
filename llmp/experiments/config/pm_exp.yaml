@@ -1,0 +1,64 @@
+experiment_name: "test"
+mode: "sample_only"
+llm_type: "phi-3-mini-128k-instruct"
+data_path: "./data/pm/consulta.pkl" # "./data/pm/consulta_1.0_0.007.pkl"
+output_dir: "./output/pm"
+plot_dir: "./plots/pm"
+batch_size: 2
+prompt_ordering: "random"
+autoregressive: False
+max_generated_length: 16
+sort_x_test: False
+num_decimal_places_y: 0
+num_samples: 5
+print_prompts: True
+y_prefix: ", Lead Time: "
+prefix: "The following is a process mining log. The values are current activity (concept:name) time from start, time from previous event, counts of past different activities
+ '# concept:name=Traer informacion estudiante - banner',
+ '# concept:name=Traer informacion estudiante - banner_app',
+ '# concept:name=Traer informacion estudiante - banner_app_app',
+ '# concept:name=Radicar Solicitud Homologacion_app_app',
+ '# concept:name=Validar solicitud_app_app',
+ '# concept:name=Homologacion por grupo de cursos_app_app',
+ '# concept:name=Notificacion estudiante cancelacion soli_app_app',
+ '# concept:name=Cancelar Solicitud_app_app',
+ '# concept:name=Recepcion de documentos_app_app',
+ '# concept:name=Revisar curso_app_app',
+ '# concept:name=Evaluacion curso_app_app',
+ '# concept:name=Validacion final_app_app',
+ '# concept:name=Visto Bueno Cierre Proceso_app_app',
+ '# concept:name=Transferir Creditos_app_app',
+ '# concept:name=Transferir creditos homologables_app_app',
+ '# concept:name=Cancelar curso_app_app',
+ '# concept:name=Avanzar recepcion documentos_app_app',
+ '# concept:name=Validar solicitud / pre-homologacion_app_app',
+ '# concept:name=Radicar Solicitud Homologacion_app',
+ '# concept:name=Validar solicitud_app',
+ '# concept:name=Homologacion por grupo de cursos_app',
+ '# concept:name=Notificacion estudiante cancelacion soli_app',
+ '# concept:name=Cancelar Solicitud_app',
+ '# concept:name=Recepcion de documentos_app',
+ '# concept:name=Revisar curso_app',
+ '# concept:name=Evaluacion curso_app',
+ '# concept:name=Validacion final_app',
+ '# concept:name=Visto Bueno Cierre Proceso_app',
+ '# concept:name=Transferir Creditos_app',
+ '# concept:name=Transferir creditos homologables_app',
+ '# concept:name=Cancelar curso_app',
+ '# concept:name=Avanzar recepcion documentos_app',
+ '# concept:name=Validar solicitud / pre-homologacion_app',
+ '# concept:name=Radicar Solicitud Homologacion',
+ '# concept:name=Validar solicitud',
+ '# concept:name=Homologacion por grupo de cursos',
+ '# concept:name=Notificacion estudiante cancelacion soli',
+ '# concept:name=Cancelar Solicitud',
+ '# concept:name=Recepcion de documentos',
+ '# concept:name=Revisar curso',
+ '# concept:name=Evaluacion curso',
+ '# concept:name=Validacion final',
+ '# concept:name=Visto Bueno Cierre Proceso',
+ '# concept:name=Transferir Creditos',
+ '# concept:name=Transferir creditos homologables',
+ '# concept:name=Cancelar curso',
+ '# concept:name=Avanzar recepcion documentos',
+ '# concept:name=Validar solicitud / pre-homologacion', and finally the lead (total) time.\n"

@@ -84,7 +84,7 @@ def _get_y_logprobs(args, tokenizer, model, input_tokens, mask, y_ranges):
         attn_mask[k, : len(t)] = torch.ones(len(t), dtype=torch.long, device='cuda')
 
     # Shift so that tokens < n predict n
-    outputs = model(input_ids=input_ids[:, :], attention_mask=attn_mask[:, :])
+    outputs = model(input_ids=input_ids[:, :], attention_mask=attn_mask[:, :], use_cache=False)
     shift_logits = outputs['logits'][..., :-1, :].contiguous()
     shift_labels = input_ids[..., 1:].contiguous()
     # Enable model parallelism
