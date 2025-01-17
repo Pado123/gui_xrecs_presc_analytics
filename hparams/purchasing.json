@@ -1,0 +1,5 @@
+{
+    "log_path": "logs/PurchasingExample.xes",
+    "date_format": "%Y-%m-%d %H:%M:%S%z",
+    "parse_dates": ["start:timestamp", "time:timestamp"]
+}

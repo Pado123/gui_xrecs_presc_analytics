@@ -1,0 +1,5 @@
+{
+    "log_path": "logs/hospital_log_CONFIDENTIAL.csv",
+    "date_format": "%Y-%m-%d %H:%M:%S%z",
+    "parse_dates": ["start:timestamp", "time:timestamp"]
+}
