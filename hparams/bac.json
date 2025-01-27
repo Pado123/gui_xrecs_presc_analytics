@@ -1,0 +1,8 @@
+{
+    "log_path": "logs/bac.xes",
+    "date_format": "%Y-%m-%d %H:%M:%S%z",
+    "cf_preprocessing": "sequential",
+    "start_date": "start:timestamp",
+    "end_date": "time:timestamp",
+    "trace_attr": ["CLOSURE_TYPE", "CLOSURE_REASON"]
+}

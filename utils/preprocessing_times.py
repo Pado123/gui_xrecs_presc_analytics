@@ -1,14 +1,57 @@
 
 import pandas as pd
+
+def encode_trace_log(input_log: pd.DataFrame, trace_attributes: list):
+    """
+    Encodes an event log into a format where each trace is represented by a single row.
+    
+    Each row includes:
+    - Trace attributes specified by the user.
+    - A list of activities with their respective time_from_start values.
+
+    Parameters:
+        input_log (pd.DataFrame): The event log, containing 'case:concept:name', 'concept:name', and 'time_from_start'.
+        trace_attributes (list): A list of column names to include as trace-level attributes.
+    
+    Returns:
+        pd.DataFrame: A DataFrame where each row represents a single trace.
+    """
+    # Group events by trace
+    grouped = input_log.groupby('case:concept:name')
+    
+    trace_dict = {}
+    
+    for trace_id, group in grouped:
+        # Sort events in the trace by 'time_from_start'
+        group = group.sort_values(by='time_from_start')
+        
+        # Create the list of activity-time tuples
+        activity_time_seq = [
+            (row['concept:name'], row['time_from_start']) 
+            for _, row in group.iterrows()
+        ]
+        
+        # Create a dictionary for the trace with its attributes and sequence
+        trace_info = {attr: group.iloc[0][attr] for attr in trace_attributes}
+        trace_info['ActTimeSeq'] = activity_time_seq
+        
+        # Add to the main dictionary with the trace ID as the key
+        trace_dict[trace_id] = trace_info
+    
+    return trace_dict
+
 def add_time_features(log, start_col='start:timestamp', end_col='time:timestamp'):
     
     # Cast the time columns to unix 
     log['activity_duration'] = (log[end_col] - log[start_col])
     log['activity_duration'] = (log['activity_duration'].dt.total_seconds() / 60).round(0).astype(int)
 
-    #Group by trace and calculate the duration of the trace, put it in a column called "trace_duration" that is the difference between the last time:timestamp and the first start:timestamp
-    log['trace_duration'] = log.groupby('case:concept:name')[end_col].transform('last') - log.groupby('case:concept:name')[start_col].transform('first') 
-    log['trace_duration'] = log['trace_duration'] = (log['trace_duration'].dt.total_seconds() / 60).round(0).astype(int)
+    # For each activity in each trace, evaluate the time from the start of the trace
+    log['time_from_start'] = ((log[end_col] - log.groupby('case:concept:name')[start_col].transform('first')).dt.total_seconds() / 60).round(0).astype(int)
+    
+    #Group by trace and calculate the duration of the trace, put it in a column called "lead_time" that is the difference between the last time:timestamp and the first start:timestamp
+    log['lead_time'] = log.groupby('case:concept:name')[end_col].transform('last') - log.groupby('case:concept:name')[start_col].transform('first') 
+    log['lead_time'] = (log['lead_time'].dt.total_seconds() / 60).round(0).astype(int)
 
     return log
 
@@ -19,3 +62,28 @@ def add_daily_features(log, start_col='start:timestamp', end_col='time:timestamp
     log['hour_of_day'] = log[end_col].dt.hour
 
     return log
+
+def train_test_split(log, test_size=0.2, random_state=1618, temporal=True,
+                     encoding=None, trace_attr=None):
+
+    case_ids = log['case:concept:name'].unique()
+
+    if temporal:
+        log = log.sort_values(['case:concept:name','time:timestamp'], ascending=True)
+    else:
+        log = log.sample(frac=1, random_state=random_state)
+    
+    n_test = int(len(case_ids) * test_size)
+    train_ids = case_ids[:-n_test]
+    test_ids = case_ids[-n_test:]
+
+    train = log[log['case:concept:name'].isin(train_ids)]
+    test = log[log['case:concept:name'].isin(test_ids)]
+
+    if encoding == 'sequential':
+        train = train.sort_values(by=['case:concept:name', 'time:timestamp'])
+        test = test.sort_values(by=['case:concept:name', 'time:timestamp'])
+        train = encode_trace_log(train, trace_attr)
+        test = encode_trace_log(test, trace_attr)
+        
+    return train, test

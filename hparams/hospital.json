@@ -1,5 +1,7 @@
 {
     "log_path": "logs/hospital_log_CONFIDENTIAL.csv",
-    "date_format": "%Y-%m-%d %H:%M:%S%z",
-    "parse_dates": ["start:timestamp", "time:timestamp"]
+    "date_format": "%Y-%m-%dT%H:%M:%SZ",
+    "cf_preprocessing": "aggr_hist",
+    "start_date": "start:timestamp",
+    "end_date": "time:timestamp"
 }

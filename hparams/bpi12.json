@@ -1,6 +1,7 @@
 {
-    "log_path": "logs/PurchasingExample.xes",
+    "log_path": "logs/bpi12w.xes",
     "date_format": "%Y-%m-%d %H:%M:%S%z",
+    "cf_preprocessing": "sequential",
     "start_date": "start:timestamp",
     "end_date": "time:timestamp"
 }

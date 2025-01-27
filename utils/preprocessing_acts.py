@@ -1,7 +1,47 @@
 import pandas as pd
 import pm4py
+import tqdm
 
-def add_history(df, case_id_name='case:concept:name', activity_column_name='concept:name',
+def from_lifecycles_to_start_end(event_log):
+    """
+    Transforms the event log so that each activity in a trace is represented by a single row
+    with "start_date" and "end_date" instead of separate rows for 'start' and 'complete' transitions.
+
+    :param event_log: pandas DataFrame containing the event log
+    :return: pandas DataFrame with combined transitions
+    """
+    # Filter start and complete events
+    start_events = event_log[event_log['lifecycle:transition'] == 'start'].copy()
+    complete_events = event_log[event_log['lifecycle:transition'] == 'complete'].copy()
+
+    # Assign unique identifiers to match start and complete events correctly within each trace
+    start_events['activity_instance'] = start_events.groupby(
+        ['case:concept:name', 'concept:name']
+    ).cumcount()
+
+    complete_events['activity_instance'] = complete_events.groupby(
+        ['case:concept:name', 'concept:name']
+    ).cumcount()
+
+    # Merge start and complete events on case ID, activity name, and activity instance
+    combined_events = pd.merge(
+        start_events, 
+        complete_events, 
+        on=['case:concept:name', 'concept:name', 'activity_instance'],
+        suffixes=('_start', '_complete')
+    )
+
+    # Create the result with 'start_date' and 'end_date'
+    combined_events = combined_events[[
+        'case:concept:name', 'concept:name', 'time:timestamp_start', 'time:timestamp_complete'
+    ]].rename(columns={
+        'time:timestamp_start': 'start:timestamp',
+        'time:timestamp_complete': 'time:timestamp'
+    })
+
+    return combined_events
+
+def encode_log(df, case_id_name='case:concept:name', parse_dates=['start:timestamp','time:timestamp'], activity_column_name='concept:name',
                  encoding='aggr_hist', last_act_num=3):
     """
     Adds historical information to a dataframe based on the specified encoding.
@@ -16,15 +56,15 @@ def add_history(df, case_id_name='case:concept:name', activity_column_name='conc
     Returns:
     - pd.DataFrame: The transformed dataframe.
     """
-    encoding_list = ['aggr_hist', 'last_k', 'no_hist']
+    encoding_list = ['aggr_hist', 'last_k', 'no_hist', 'sequential']
 
     if isinstance(df, str):
         try:
             if df.endswith('.xes'):
                 log = pm4py.read_xes(df)
-                df = pm4py.convert_to_dataframe(log)
+                df = pm4py.convert_to_dataframe(log, parse_dates=parse_dates)
             else:
-                df = pd.read_csv(df)
+                df = pd.read_csv(df, parse_dates=parse_dates)
         except Exception as e:
             raise ValueError(f"Error loading dataframe from path: {e}")
 
@@ -37,6 +77,16 @@ def add_history(df, case_id_name='case:concept:name', activity_column_name='conc
     if encoding == 'last_k' and not isinstance(last_act_num, int):
         raise ValueError(f"last_act_num must be an integer, got {type(last_act_num).__name__}")
 
+        # If lifecycles are present, convert them to start and end events
+    if 'lifecycle:transition' in df.columns:
+
+        # Remove the transitions that are not start or end, then print the number of rows removed
+        print(f"Removing {len(df[~df['lifecycle:transition'].isin(['start', 'complete'])])} rows with transitions different from 'start' or 'complete'")
+        df = df[df['lifecycle:transition'].isin(['start', 'complete'])]
+
+        print("Lifecycles detected, converting")
+        df = from_lifecycles_to_start_end(df)
+
     if encoding == 'aggr_hist':
         for activity in df[activity_column_name].unique():
             df[f"# {activity_column_name}={activity}"] = 0
@@ -47,7 +97,7 @@ def add_history(df, case_id_name='case:concept:name', activity_column_name='conc
                 df.groupby(case_id_name)[f"# {activity_column_name}={activity}"].cumsum()
         return df
 
-    if encoding == 'last_k':
+    elif encoding == 'last_k':
         # Add columns for the last `last_act_num` activities
         for i in range(1, last_act_num + 1):
             df[f'last_{i}_activity'] = None
@@ -66,5 +116,9 @@ def add_history(df, case_id_name='case:concept:name', activity_column_name='conc
                 history.append(row[activity_column_name])
         return df
 
-    if encoding == 'no_hist':  
+    elif encoding == 'no_hist':  
         return df
+
+    elif encoding == 'sequential':
+        return df
+        
