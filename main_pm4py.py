@@ -5,7 +5,7 @@ import json
 import os
 
 # Set the exp_name 
-exp_name = 'bac'
+exp_name = 'hospital'
 print(f"Experiment name set to: {exp_name}")
 
 print(f"Loading hyperparameters from 'hparams/{exp_name}.json'")
@@ -33,6 +33,7 @@ print(f"Log path: {log_path}, Date format: {date_format}, Parse dates: {parse_da
 log = pr_act.encode_log(log_path, case_id_name=case_id_name, parse_dates=parse_dates,
                          activity_column_name=activity_column_name, 
                          encoding=cf_preprocessing, last_act_num=3)
+
 print("Activity history features added.")
 
 log = pr_time.add_time_features(log)
@@ -51,7 +52,10 @@ if not os.path.exists(experiment_folder):
     os.makedirs(experiment_folder)
     print("Experiment folder created.")
 
-IO.save_log(experiment_folder, log)
+log = log_parsing.drop_0s(log)
+
+IO.save_log(experiment_folder, log=log,
+            encoding_cf=cf_preprocessing, type='train')
 print("Log saved.")
 
 # Split the log into train and test
@@ -60,41 +64,40 @@ train, test = pr_time.train_test_split(log, test_size=0.2,
                                        encoding=cf_preprocessing,
                                        trace_attr=trace_attr)
 
-IO.save_log(experiment_folder, train, type='train')
-IO.save_log(experiment_folder, test, type='test')
+IO.save_log(experiment_folder=experiment_folder, log=train,
+            encoding_cf=cf_preprocessing, type='train')
+IO.save_log(experiment_folder=experiment_folder, log=test,
+            encoding_cf=cf_preprocessing, type='test')
 print("Preprocessing Procedure completed.")
 
 # %%
-# Check phase
-train = pd.read_csv(f'{experiment_folder}/train.csv')
-test = pd.read_csv(f'{experiment_folder}/test.csv')
+# # Check phase
+# train = pd.read_csv(f'{experiment_folder}/train.csv')
+# test = pd.read_csv(f'{experiment_folder}/test.csv')
 
-# Make a vector with the maximum timestamp of each trace
-max_timestamps = train.groupby('case:concept:name')['time:timestamp'].max()
-max_timestamps = max_timestamps.reset_index()
-max_timestamps.columns = ['case:concept:name', 'max_timestamp']
+# # Make a vector with the maximum timestamp of each trace
+# max_timestamps = train.groupby('case:concept:name')['time:timestamp'].max()
+# max_timestamps = max_timestamps.reset_index()
+# max_timestamps.columns = ['case:concept:name', 'max_timestamp']
 
-# same for the test
-max_timestamps_test = test.groupby('case:concept:name')['time:timestamp'].max()
-max_timestamps_test = max_timestamps_test.reset_index()
-max_timestamps_test.columns = ['case:concept:name', 'max_timestamp']
+# # same for the test
+# max_timestamps_test = test.groupby('case:concept:name')['time:timestamp'].max()
+# max_timestamps_test = max_timestamps_test.reset_index()
+# max_timestamps_test.columns = ['case:concept:name', 'max_timestamp']
 
-# Check if the maximum of the train is less than the minimum of the test
-if max(max_timestamps['max_timestamp']) < min(max_timestamps_test['max_timestamp']):
-    print("The train and test sets are correctly split.")
+# # Check if the maximum of the train is less than the minimum of the test
+# if max(max_timestamps['max_timestamp']) < min(max_timestamps_test['max_timestamp']):
+#     print("The train and test sets are correctly split.")
 
-# If not, print the percentage of wrong values
-else:
-    wrong_values = sum(max_timestamps['max_timestamp'] > min(max_timestamps_test['max_timestamp'])) / len(max_timestamps)
-    print(f"Percentage of overlapping events: {round(wrong_values*100, 2)}%")
+# # If not, print the percentage of wrong values
+# else:
+#     wrong_values = sum(max_timestamps['max_timestamp'] > min(max_timestamps_test['max_timestamp'])) / len(max_timestamps)
+#     print(f"Percentage of overlapping events: {round(wrong_values*100, 2)}%")
 
-# Check if they share some cases
-shared_cases = set(max_timestamps['case:concept:name']).intersection(set(max_timestamps_test['case:concept:name']))
-print(f"Number of shared cases between test and train: {len(shared_cases)}")
+# # Check if they share some cases
+# shared_cases = set(max_timestamps['case:concept:name']).intersection(set(max_timestamps_test['case:concept:name']))
+# print(f"Number of shared cases between test and train: {len(shared_cases)}")
 
-# Controlla se la durata media e mediana della lunghezza di ogni traccia di train e test è simile
-train['lead_time'].describe()
-test['lead_time'].describe()
-
-
-# %%
+# # Controlla se la durata media e mediana della lunghezza di ogni traccia di train e test è simile
+# train['lead_time'].describe()
+# test['lead_time'].describe()

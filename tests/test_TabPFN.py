@@ -1,13 +1,11 @@
-# %% Train catboost
+# %% Train TabPFN
 import os
 os.chdir('..')
 
-import catboost
 import pandas as pd
 import numpy as np
 import json
-from catboost import CatBoostRegressor, Pool
-import pm4py
+from tabpfn import TabPFNRegressor
 import utils.log_parsing as log_parsing
 import numpy as np
 
@@ -21,7 +19,7 @@ with open(f'hparams/{exp_name}.json') as f:
 print("Hyperparameters loaded successfully.")
 
 remove_outliers = False
-n_samples = 2
+n_samples = 'max'
 cf_preprocessing = hparams['cf_preprocessing']
 if cf_preprocessing == 'sequential':
     raise ValueError('Catboost does not support sequential encoding')
@@ -42,43 +40,19 @@ except: None
 
 # test = df_test.sample(frac=1, random_state=1618).reset_index(drop=True).iloc[20:40]
 
-def fit_model(train_df, y, test_df, test_y):
+for col in df_train.select_dtypes(['object', 'category']).columns:
+    df_train[col] = pd.factorize(df_train[col])[0]
 
-    categorical_features = train_df.select_dtypes(exclude=np.number).columns
-    train_df[categorical_features] = train_df[categorical_features].astype(str)
-    column_types = train_df.dtypes.astype(str).to_dict()
-    
-    params = {
-        'depth': 4,
-        'learning_rate': 0.001,
-        'iterations': 15000,
-        'early_stopping_rounds': 500,
-        'thread_count': 4,
-        'logging_level': 'Verbose',
-        'task_type': "CPU"  # "GPU" if int(os.environ["USE_GPU"]) else "CPU"
-    }
+for col in df_test.select_dtypes(['object', 'category']).columns:
+    df_test[col] = pd.factorize(df_test[col])[0]
 
-    print('Starting training...')
-    params["loss_function"] = "MAE"
-    print('The train and test shapes are ', train_df.shape, test_df.shape)
-    train_data = Pool(train_df, y, cat_features=categorical_features.values)
-    test_data = Pool(test_df, test_y, cat_features=categorical_features.values)
-    try: 
-        del model
-        print('Model deleted')
-    except: 
-        print('Model not found')
-    model = CatBoostRegressor(**params)
-    model.fit(train_data, verbose=True, plot=False, eval_set=(test_data), use_best_model=True, )
-    return model
+def fit_model(train_df, y):
 
+    reg = TabPFNRegressor(random_state=1618)
+    reg.fit(train_df, y)
+    return reg
 
-# Train the model
-model = fit_model(df_train.drop(['lead_time'], axis=1), 
-                  df_train['lead_time'], df_test.drop(['lead_time'], 
-                    axis=1), df_test['lead_time'])
-
-# #Set y as "lead_time"
+#Set y as "lead_time"
 y_train = df_train['lead_time']
 y_test = df_test['lead_time']
 
@@ -86,9 +60,11 @@ y_test = df_test['lead_time']
 X_train = df_train.drop(['lead_time'], axis=1)
 X_test = df_test.drop(['lead_time'], axis=1)
 
+reg = fit_model(X_train, y_train)
+
 # Predict the value of y
 print('Predict Catboost')
-y_pred = model.predict(X_test)
+y_pred = reg.predict(X_test)
 
 # Print the mean for the y_pred
 print('The mean of y_true is ', round(np.mean(y_test), 2))

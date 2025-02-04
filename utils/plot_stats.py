@@ -1,4 +1,10 @@
 import matplotlib.pyplot as plt
+import numpy as np
+from sklearn.metrics import mean_absolute_error
+
+
+def relative_mae_sklearn(y_true, y_pred):
+    return mean_absolute_error(y_true, y_pred) / np.mean(y_true)
 
 def plot_activity_duration(log):
     
@@ -16,3 +22,8 @@ def plot_activity_duration(log):
 
     #PLot the 95th percentile of the trace duration
     plt.axvline(log['trace_duration'].quantile(0.99), color='r')
+
+def relative_mae(y_true, y_pred):
+    mae = np.mean(np.abs(y_true - y_pred))
+    mean_true = np.mean(y_true)
+    return mae / mean_true
