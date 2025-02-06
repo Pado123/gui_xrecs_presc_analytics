@@ -1,7 +1,6 @@
 # %% Train catboost
 import os
-os.chdir('..')
-
+os.chdir('/home/padela/Scrivania/LLMs/gui_xrecs_presc_analytics')
 import catboost
 import pandas as pd
 import numpy as np
@@ -22,6 +21,7 @@ print("Hyperparameters loaded successfully.")
 
 remove_outliers = False
 n_samples = 2
+n_simulations = 30
 cf_preprocessing = hparams['cf_preprocessing']
 if cf_preprocessing == 'sequential':
     raise ValueError('Catboost does not support sequential encoding')
@@ -34,13 +34,9 @@ if remove_outliers:
     df_test = log_parsing.remove_outliers_iqr(df_test, 'lead_time')
     print('Outliers removed')
 
-
-try:    
-    df_train = df_train.sample(frac=1, random_state=1625).reset_index(drop=True).iloc[:n_samples] 
-    print(f'Using {n_samples} samples')
-except: None
-
-# test = df_test.sample(frac=1, random_state=1618).reset_index(drop=True).iloc[20:40]
+if n_samples == 500:
+    print(f'The ratio of 500/len is {500/len(df_train)}')
+lmae, lmape, lrmae = [], [], []
 
 def fit_model(train_df, y, test_df, test_y):
 
@@ -55,12 +51,13 @@ def fit_model(train_df, y, test_df, test_y):
         'early_stopping_rounds': 500,
         'thread_count': 4,
         'logging_level': 'Verbose',
-        'task_type': "CPU"  # "GPU" if int(os.environ["USE_GPU"]) else "CPU"
+        'task_type': "CPU",  # "GPU" if int(os.environ["USE_GPU"]) else "CPU"
+        'loss_function': 'MAE'
     }
 
-    print('Starting training...')
-    params["loss_function"] = "MAE"
-    print('The train and test shapes are ', train_df.shape, test_df.shape)
+    # print('Starting training...')
+    # params["loss_function"] = "MAE"
+    # print('The train and test shapes are ', train_df.shape, test_df.shape)
     train_data = Pool(train_df, y, cat_features=categorical_features.values)
     test_data = Pool(test_df, test_y, cat_features=categorical_features.values)
     try: 
@@ -69,70 +66,93 @@ def fit_model(train_df, y, test_df, test_y):
     except: 
         print('Model not found')
     model = CatBoostRegressor(**params)
-    model.fit(train_data, verbose=True, plot=False, eval_set=(test_data), use_best_model=True, )
+    model.fit(train_data, verbose=False, plot=False, eval_set=(test_data), use_best_model=True)
     return model
 
+for seed in range(n_simulations):
 
-# Train the model
-model = fit_model(df_train.drop(['lead_time'], axis=1), 
-                  df_train['lead_time'], df_test.drop(['lead_time'], 
+    # Import again the train
+    df_train = pd.read_csv(f'experiments/{exp_name}/preprocessed_log_{cf_preprocessing}_train.csv')
+    
+    rseed = int(1618 + seed)
+    try:    
+        df_train = df_train.sample(frac=1, random_state=rseed).reset_index(drop=True).iloc[:n_samples] 
+    except: 
+        print('Sampling not done')
+        None        
+
+    # #Set y as "lead_time"
+    y_train = df_train['lead_time']
+    y_test = df_test['lead_time']
+
+    # #Remove from train 
+    X_train = df_train.drop(['lead_time'], axis=1)
+    X_test = df_test.drop(['lead_time'], axis=1)
+
+    model = fit_model(df_train.drop(['lead_time'], axis=1), 
+                df_train['lead_time'], df_test.drop(['lead_time'], 
                     axis=1), df_test['lead_time'])
 
-# #Set y as "lead_time"
-y_train = df_train['lead_time']
-y_test = df_test['lead_time']
+    # Predict the value of y n_simulations
+    # print('Predict Catboost')
+    y_pred = model.predict(X_test)
 
-# #Remove from train 
-X_train = df_train.drop(['lead_time'], axis=1)
-X_test = df_test.drop(['lead_time'], axis=1)
+    # Print the mean for the y_pred
+    # print('The mean of y_true is ', round(np.mean(y_test), 2))
 
-# Predict the value of y
-print('Predict Catboost')
-y_pred = model.predict(X_test)
+    #Evaluate MAE using sklearn
+    from sklearn.metrics import mean_absolute_percentage_error
+    from sklearn.metrics import median_absolute_error
+    from sklearn.metrics import mean_absolute_error
+    from utils.plot_stats import relative_mae
 
-# Print the mean for the y_pred
-print('The mean of y_true is ', round(np.mean(y_test), 2))
+    # y_pred = [y_test.median() for i in range(len(y_test))]
 
-#Evaluate MAE using sklearn
-from sklearn.metrics import mean_absolute_percentage_error
-from sklearn.metrics import median_absolute_error
-from sklearn.metrics import mean_absolute_error
-from utils.plot_stats import relative_mae
+    mse = mean_absolute_percentage_error(y_test, y_pred)
+    # print('The MAPE is ', round(mse, 2)) 
 
-# y_pred = [y_test.median() for i in range(len(y_test))]
+    mae = mean_absolute_error(y_test, y_pred)
+    # print('The MAE is ', round(mae, 2))
+
+    #Same with median 
+    rmae = relative_mae(y_test, y_pred)
+    # print('The rMAE is ', round(rmae, 2))
+
+    lmae.append(mae)
+    lmape.append(mse)
+    lrmae.append(rmae)
+    print(f'{mae} - {mse} - {rmae}')
+    print(f'Iteration {seed+1} completed')
+
+#Print an empty line for 8 lines
+print('\n'*8)
 
 # Print the mean value of y_pred
+print(f'Using {n_samples} samples')
 print('The mean of y_pred is ', round(np.mean(y_pred), 2))
-
-mse = mean_absolute_percentage_error(y_test, y_pred)
-print('The MAPE is ', round(mse, 2)) 
-
-mae = mean_absolute_error(y_test, y_pred)
-print('The MAE is ', round(mae, 2))
-
-#Same with median 
-rmae = relative_mae(y_test, y_pred)
-print('The rMAE is ', round(rmae, 2))
-
-print('MAE, MAPE and rMAE calculated, they are ', round(mae, 2),'-', 
-      round(mse, 2),'-', round(rmae, 2))
-
-# Print df_train lenght
+print(f' The median of y_pred is {round(np.median(y_pred), 2)}')
+print(f' Test lenght is {len(df_test)}')
 print(f' Train lenght is {len(df_train)}')
+print('The means are ', round(np.mean(lmae), 2),'-',
+       round(np.mean(lmape), 2),'-', round(np.mean(lrmae), 2))
+# #Plot the errors
+# import matplotlib.pyplot as plt
 
-#Plot the errors
-import matplotlib.pyplot as plt
-plt.plot(y_pred - y_test, 'o')
-plt.xlabel('True values')
-plt.ylabel('Predicted values')
-plt.title(f'Predicted vs True for {n_samples} examples')
+# #Plot the mean and the median of the errors as line
+# errors = (y_pred - y_test)/y_test.mean()
+# plt.plot(y_test, errors, 'o')
+# plt.hlines(np.mean(errors), xmax=np.max(y_test), xmin=0, colors='r', label='Mean')
+# plt.hlines(np.median(errors), xmax=np.max(y_test), xmin=0, colors='b', label='Median')
+# plt.xlabel('True values')
+# plt.ylabel('Predicted values')
+# plt.title(f'Predicted vs True for {n_samples} examples')
 
-# Plot the y-distribution
-plt.figure()
-plt.hist(y_test, bins=50, alpha=0.5, label='Test', density=True)
-plt.hist(y_train, bins=50, alpha=0.5, label='Train', density=True)
-plt.hist(y_pred, bins=50, alpha=0.5, label='Predicted', density=True)
-plt.legend()
-plt.title(f'True vs Predicted for {n_samples} examples {"" if remove_outliers else "without"} outliers')
+# # Plot the y-distribution
+# plt.figure()
+# plt.hist(y_test, bins=50, alpha=0.5, label='Test', density=True)
+# plt.hist(y_train, bins=50, alpha=0.5, label='Train', density=True)
+# plt.hist(y_pred, bins=50, alpha=0.5, label='Predicted', density=True)
+# plt.legend()
+# plt.title(f'True vs Predicted for {n_samples} examples {"" if remove_outliers else "without"} outliers')
 
 # %%
