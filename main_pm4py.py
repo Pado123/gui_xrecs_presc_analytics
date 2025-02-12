@@ -5,7 +5,7 @@ import json
 import os
 
 # Set the exp_name 
-exp_name = 'hospital'
+exp_name = 'production'
 print(f"Experiment name set to: {exp_name}")
 
 print(f"Loading hyperparameters from 'hparams/{exp_name}.json'")
@@ -30,9 +30,9 @@ end_date = hparams['end_date']
 parse_dates = [start_date, end_date]
 print(f"Log path: {log_path}, Date format: {date_format}, Parse dates: {parse_dates}")
 
-log = pr_act.encode_log(log_path, case_id_name=case_id_name, parse_dates=parse_dates,
+log, attr_trace_dict = pr_act.encode_log(log_path, case_id_name=case_id_name, parse_dates=parse_dates,
                          activity_column_name=activity_column_name, 
-                         encoding=cf_preprocessing, last_act_num=3)
+                         encoding=cf_preprocessing, last_act_num=3, trace_attr=trace_attr)
 
 print("Activity history features added.")
 
@@ -52,17 +52,19 @@ if not os.path.exists(experiment_folder):
     os.makedirs(experiment_folder)
     print("Experiment folder created.")
 
-log = log_parsing.drop_0s(log)
+log = log_parsing.drop_0s(log) 
+log = log_parsing.add_attr(log, attr_trace_dict, cf_preprocessing)
 
-IO.save_log(experiment_folder, log=log,
-            encoding_cf=cf_preprocessing, type='train')
+# IO.save_log(experiment_folder, log=log,
+#             encoding_cf=cf_preprocessing, type=None)
 print("Log saved.")
 
 # Split the log into train and test
 train, test = pr_time.train_test_split(log, test_size=0.2, 
                                        random_state=1618, temporal=True, 
                                        encoding=cf_preprocessing,
-                                       trace_attr=trace_attr)
+                                       trace_attr=trace_attr,
+                                       attr_trace_dict=attr_trace_dict)
 
 IO.save_log(experiment_folder=experiment_folder, log=train,
             encoding_cf=cf_preprocessing, type='train')

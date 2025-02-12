@@ -1,14 +1,16 @@
 # %% Train catboost
 import os
-os.chdir('/home/padela/Scrivania/LLMs/gui_xrecs_presc_analytics')
 import catboost
 import pandas as pd
 import numpy as np
 import json
 from catboost import CatBoostRegressor, Pool
 import pm4py
+
+os.chdir('/home/padela/Scrivania/LLMs/gui_xrecs_presc_analytics')
+# import ipdb; ipdb.set_trace()
 import utils.log_parsing as log_parsing
-import numpy as np
+
 
 # Set the exp_name 
 exp_name = 'bpi12'
@@ -20,8 +22,8 @@ with open(f'hparams/{exp_name}.json') as f:
 print("Hyperparameters loaded successfully.")
 
 remove_outliers = False
-n_samples = 2
-n_simulations = 30
+n_samples = 500
+n_simulations = 10
 cf_preprocessing = hparams['cf_preprocessing']
 if cf_preprocessing == 'sequential':
     raise ValueError('Catboost does not support sequential encoding')
@@ -36,7 +38,7 @@ if remove_outliers:
 
 if n_samples == 500:
     print(f'The ratio of 500/len is {500/len(df_train)}')
-lmae, lmape, lrmae = [], [], []
+lmae, lmape, lrmae, lcvae = [], [], [], []
 
 def fit_model(train_df, y, test_df, test_y):
 
@@ -118,9 +120,13 @@ for seed in range(n_simulations):
     rmae = relative_mae(y_test, y_pred)
     # print('The rMAE is ', round(rmae, 2))
 
+    errors = (y_pred - y_test)
+    cvae = np.std(errors)/np.mean(y_test)
+
     lmae.append(mae)
     lmape.append(mse)
     lrmae.append(rmae)
+    lcvae.append(cvae)
     print(f'{mae} - {mse} - {rmae}')
     print(f'Iteration {seed+1} completed')
 
@@ -133,8 +139,27 @@ print('The mean of y_pred is ', round(np.mean(y_pred), 2))
 print(f' The median of y_pred is {round(np.median(y_pred), 2)}')
 print(f' Test lenght is {len(df_test)}')
 print(f' Train lenght is {len(df_train)}')
+print('\n'*8)
+
+y_mean = np.full(len(y_test), np.mean(y_test))
+y_median = np.full(len(y_test), np.median(y_test))
+print(f'The benchmark value for mean are','-', round(mean_absolute_percentage_error(y_test, y_mean), 2),
+      '-', round(mean_absolute_error(y_test, y_mean), 2), '-', round(relative_mae(y_test, y_mean), 2))
+
+print(f'The benchmark value for median are','-', round(mean_absolute_percentage_error(y_test, y_median), 2),
+        '-', round(mean_absolute_error(y_test, y_median), 2), '-', round(relative_mae(y_test, y_median), 2))
+
+
+print('\n'*8)
+
 print('The means are ', round(np.mean(lmae), 2),'-',
        round(np.mean(lmape), 2),'-', round(np.mean(lrmae), 2))
+print('The mean of cvae is ', round(np.mean(lcvae), 2))
+
+
+
+
+
 # #Plot the errors
 # import matplotlib.pyplot as plt
 
@@ -154,5 +179,10 @@ print('The means are ', round(np.mean(lmae), 2),'-',
 # plt.hist(y_pred, bins=50, alpha=0.5, label='Predicted', density=True)
 # plt.legend()
 # plt.title(f'True vs Predicted for {n_samples} examples {"" if remove_outliers else "without"} outliers')
+
+0# %%
+if __name__ == '__main__':
+    print('uf')
+0.2# %%
 
 # %%

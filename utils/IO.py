@@ -19,7 +19,7 @@ def save_log(experiment_folder, log, encoding_cf, type=None):
     # if the file is a pickle file, save the log as a json file
     elif '.json' in output_path:
         print(f"Saving preprocessed log to '{output_path}'")
-        dict_as_string = json.dumps(log)    
+        dict_as_string = json.dumps(log, default=str)    
         with open(output_path, 'w') as file:
             file.write(dict_as_string)
         print("Preprocessed log saved as str")

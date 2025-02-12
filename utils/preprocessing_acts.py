@@ -41,8 +41,27 @@ def from_lifecycles_to_start_end(event_log):
 
     return combined_events
 
+
+def gen_attr_dict(df, trace_attr):
+
+    """
+    Generates a dictionary where each key is an attribute from trace_attr,
+    and each value is a dictionary mapping 'case:concept:name' to the attribute value.
+    
+    :param df: Pandas DataFrame containing the event log.
+    :param trace_attr: List of trace attributes to extract.
+    :return: Nested dictionary {trace_attr: {case:concept:name: value}}
+    """
+    attr_trace_dict = {}
+    
+    for attr in trace_attr:
+        attr_trace_dict[attr] = df.set_index('case:concept:name')[attr].to_dict()
+    
+    return attr_trace_dict
+
+
 def encode_log(df, case_id_name='case:concept:name', parse_dates=['start:timestamp','time:timestamp'], activity_column_name='concept:name',
-                 encoding='aggr_hist', last_act_num=3):
+                 encoding='aggr_hist', last_act_num=3, trace_attr=None):
     """
     Adds historical information to a dataframe based on the specified encoding.
 
@@ -78,6 +97,8 @@ def encode_log(df, case_id_name='case:concept:name', parse_dates=['start:timesta
         raise ValueError(f"last_act_num must be an integer, got {type(last_act_num).__name__}")
 
         # If lifecycles are present, convert them to start and end events
+
+    attr_trace_dict = gen_attr_dict(df, trace_attr)
     if 'lifecycle:transition' in df.columns:
 
         # Remove the transitions that are not start or end, then print the number of rows removed
@@ -95,7 +116,7 @@ def encode_log(df, case_id_name='case:concept:name', parse_dates=['start:timesta
             # Sum the count from the previous events
             df[f"# {activity_column_name}={activity}"] = \
                 df.groupby(case_id_name)[f"# {activity_column_name}={activity}"].cumsum()
-        return df
+        return df, attr_trace_dict
 
     elif encoding == 'last_k':
         # Add columns for the last `last_act_num` activities
@@ -114,11 +135,11 @@ def encode_log(df, case_id_name='case:concept:name', parse_dates=['start:timesta
                         df.loc[idx, f'last_{i}_activity'] = None
                 # Update the history with the current activity
                 history.append(row[activity_column_name])
-        return df
+        return df, attr_trace_dict
 
     elif encoding == 'no_hist':  
-        return df
+        return df, None
 
     elif encoding == 'sequential':
-        return df
+        return df, attr_trace_dict
         

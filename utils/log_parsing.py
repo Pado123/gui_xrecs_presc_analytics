@@ -76,3 +76,19 @@ def reorder_cols(df, encoding=None):
     
     return df
 
+def re_add_attributes(df, log_path, trace_attr, parse_dates):
+
+    real_df = read_data(log_path, start_col=parse_dates[0], date_format="%Y-%m-%d %H:%M:%S")
+    return df
+
+def add_attr(log, trace_dict, cf_preprocessing):
+
+    # Initialize a new column for each trace attribute
+    for attr, mapping in trace_dict.items():
+        log[attr] = log['case:concept:name'].map(mapping)
+    
+    # Put the columns you created after the first one
+    log = reorder_cols(log, encoding=cf_preprocessing)
+
+    return log
+

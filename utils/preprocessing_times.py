@@ -1,7 +1,7 @@
 
 import pandas as pd
 
-def encode_trace_log(input_log: pd.DataFrame, trace_attributes: list):
+def encode_trace_log(input_log: pd.DataFrame, trace_attributes: list, attr_trace_dict: dict) -> pd.DataFrame:
     """
     Encodes an event log into a format where each trace is represented by a single row.
     
@@ -19,7 +19,7 @@ def encode_trace_log(input_log: pd.DataFrame, trace_attributes: list):
     # Group events by trace
     grouped = input_log.groupby('case:concept:name')
     
-    trace_dict = {}
+    attr_trace_dict = {}
     
     for trace_id, group in grouped:
         # Sort events in the trace by 'time_from_start'
@@ -32,13 +32,19 @@ def encode_trace_log(input_log: pd.DataFrame, trace_attributes: list):
         ]
         
         # Create a dictionary for the trace with its attributes and sequence
-        trace_info = {attr: group.iloc[0][attr] for attr in trace_attributes}
+        trace_info = {}
+
+        # if Trace_attributes is not none or an empty list, add the attributes to the trace_info dictionary
+        if trace_attributes:
+            for attr in trace_attributes:
+                trace_info[attr] = group[attr].iloc[0]
+        
         trace_info['ActTimeSeq'] = activity_time_seq
         
         # Add to the main dictionary with the trace ID as the key
-        trace_dict[trace_id] = trace_info
+        attr_trace_dict[trace_id] = trace_info
     
-    return trace_dict
+    return attr_trace_dict
 
 def add_time_features(log, start_col='start:timestamp', end_col='time:timestamp'):
     
@@ -64,7 +70,7 @@ def add_daily_features(log, start_col='start:timestamp', end_col='time:timestamp
     return log
 
 def train_test_split(log, test_size=0.2, random_state=1618, temporal=True,
-                     encoding=None, trace_attr=None):
+                     encoding=None, trace_attr=None, attr_trace_dict=None):
 
     case_ids = log['case:concept:name'].unique()
 
@@ -83,7 +89,7 @@ def train_test_split(log, test_size=0.2, random_state=1618, temporal=True,
     if encoding == 'sequential':
         train = train.sort_values(by=['case:concept:name', 'time:timestamp'])
         test = test.sort_values(by=['case:concept:name', 'time:timestamp'])
-        train = encode_trace_log(train, trace_attr)
-        test = encode_trace_log(test, trace_attr)
+        train = encode_trace_log(train, trace_attr, attr_trace_dict)
+        test = encode_trace_log(test, trace_attr, attr_trace_dict)
         
     return train, test
