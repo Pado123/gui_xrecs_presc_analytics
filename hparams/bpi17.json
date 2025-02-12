@@ -1,0 +1,8 @@
+{
+    "log_path": "logs/bpi17_w.xes",
+    "date_format": "%Y-%m-%dT%H:%M:%S",
+    "cf_preprocessing": "aggr_hist",
+    "start_date": "start:timestamp",
+    "end_date": "time:timestamp",
+    "trace_attr": ["ApplicationType", "RequestedAmount"]
+}
