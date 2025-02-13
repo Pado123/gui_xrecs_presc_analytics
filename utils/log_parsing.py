@@ -5,6 +5,9 @@ import tqdm
 from pm4py.objects.log.importer.xes import importer as xes_importer
 
 def drop_0s(log):
+
+    #Cut traces of lenght 2
+    # log = log.groupby('case:concept:name').filter(lambda x: len(x) > 2)
     return log[log['lead_time'] > 0]
 
 def parse_cf_caseid_traceatt(hparams):

@@ -5,7 +5,7 @@ import json
 import os
 
 # Set the exp_name 
-exp_name = 'production'
+exp_name = 'bac'
 print(f"Experiment name set to: {exp_name}")
 
 print(f"Loading hyperparameters from 'hparams/{exp_name}.json'")

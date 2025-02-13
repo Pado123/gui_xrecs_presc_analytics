@@ -13,7 +13,7 @@ import utils.log_parsing as log_parsing
 
 
 # Set the exp_name 
-exp_name = 'bpi12'
+exp_name = 'hospital'
 print(f"Experiment name set to: {exp_name}")
 
 print(f"Loading hyperparameters from 'hparams/{exp_name}.json'")
@@ -23,7 +23,7 @@ print("Hyperparameters loaded successfully.")
 
 remove_outliers = False
 n_samples = 500
-n_simulations = 10
+n_simulations = 1
 cf_preprocessing = hparams['cf_preprocessing']
 if cf_preprocessing == 'sequential':
     raise ValueError('Catboost does not support sequential encoding')
@@ -47,14 +47,14 @@ def fit_model(train_df, y, test_df, test_y):
     column_types = train_df.dtypes.astype(str).to_dict()
     
     params = {
-        'depth': 4,
-        'learning_rate': 0.001,
-        'iterations': 15000,
-        'early_stopping_rounds': 500,
+        'depth': 10,
+        'learning_rate': 0.0001,
+        'iterations': 100,
+        'early_stopping_rounds': 100,
         'thread_count': 4,
         'logging_level': 'Verbose',
         'task_type': "CPU",  # "GPU" if int(os.environ["USE_GPU"]) else "CPU"
-        'loss_function': 'MAE'
+        'loss_function': 'MAPE'
     }
 
     # print('Starting training...')
@@ -62,13 +62,9 @@ def fit_model(train_df, y, test_df, test_y):
     # print('The train and test shapes are ', train_df.shape, test_df.shape)
     train_data = Pool(train_df, y, cat_features=categorical_features.values)
     test_data = Pool(test_df, test_y, cat_features=categorical_features.values)
-    try: 
-        del model
-        print('Model deleted')
-    except: 
-        print('Model not found')
+
     model = CatBoostRegressor(**params)
-    model.fit(train_data, verbose=False, plot=False, eval_set=(test_data), use_best_model=True)
+    model.fit(train_data, verbose=True, plot=False, eval_set=(test_data), use_best_model=True)
     return model
 
 for seed in range(n_simulations):
@@ -110,7 +106,7 @@ for seed in range(n_simulations):
 
     # y_pred = [y_test.median() for i in range(len(y_test))]
 
-    mse = mean_absolute_percentage_error(y_test, y_pred)
+    mape = mean_absolute_percentage_error(y_test, y_pred)
     # print('The MAPE is ', round(mse, 2)) 
 
     mae = mean_absolute_error(y_test, y_pred)
@@ -124,10 +120,10 @@ for seed in range(n_simulations):
     cvae = np.std(errors)/np.mean(y_test)
 
     lmae.append(mae)
-    lmape.append(mse)
+    lmape.append(mape)
     lrmae.append(rmae)
     lcvae.append(cvae)
-    print(f'{mae} - {mse} - {rmae}')
+    print(f'{mae} - {mape} - {rmae}')
     print(f'Iteration {seed+1} completed')
 
 #Print an empty line for 8 lines
@@ -160,7 +156,7 @@ print('The mean of cvae is ', round(np.mean(lcvae), 2))
 
 
 
-# #Plot the errors
+# # #Plot the errors
 # import matplotlib.pyplot as plt
 
 # #Plot the mean and the median of the errors as line
@@ -180,9 +176,7 @@ print('The mean of cvae is ', round(np.mean(lcvae), 2))
 # plt.legend()
 # plt.title(f'True vs Predicted for {n_samples} examples {"" if remove_outliers else "without"} outliers')
 
-0# %%
-if __name__ == '__main__':
-    print('uf')
-0.2# %%
+
+
 
 # %%

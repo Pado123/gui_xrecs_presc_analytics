@@ -1,7 +1,9 @@
 
 import pandas as pd
+import random
 
-def encode_trace_log(input_log: pd.DataFrame, trace_attributes: list, attr_trace_dict: dict) -> pd.DataFrame:
+def encode_trace_log(input_log: pd.DataFrame, trace_attributes: 
+                     list, attr_trace_dict: dict, type: str) -> pd.DataFrame:
     """
     Encodes an event log into a format where each trace is represented by a single row.
     
@@ -38,9 +40,14 @@ def encode_trace_log(input_log: pd.DataFrame, trace_attributes: list, attr_trace
         if trace_attributes:
             for attr in trace_attributes:
                 trace_info[attr] = group[attr].iloc[0]
-        
+
+        if type == 'test':
+            activity_time_seq.append(['Running'])
         trace_info['ActTimeSeq'] = activity_time_seq
         
+
+        trace_info['lead_time'] = group['lead_time'].iloc[0]
+
         # Add to the main dictionary with the trace ID as the key
         attr_trace_dict[trace_id] = trace_info
     
@@ -69,6 +76,32 @@ def add_daily_features(log, start_col='start:timestamp', end_col='time:timestamp
 
     return log
 
+def get_running(df, case_col="case:concept:name"):
+    """
+    Trunca ogni traccia nel DataFrame sostituendola con un suo prefisso di lunghezza casuale tra 2 e len(trace)-1.
+
+    :param df: DataFrame contenente le tracce.
+    :param case_col: Nome della colonna che identifica i casi (default: "case_id").
+    :return: DataFrame con tracce troncate.
+    """
+    truncated_df_list = []
+
+    # Raggruppa per case_id e applica la troncatura
+    for case_id, group in df.groupby(case_col):
+        if len(group) > 2:
+            new_length = random.randint(2, len(group))
+            truncated_group = group.iloc[:new_length]  # Prende solo il prefisso
+        else:
+            truncated_group = group  # Se ha solo 1-2 eventi, la lasciamo invariata
+
+        truncated_df_list.append(truncated_group)
+
+    # Ricostruzione del DataFrame finale
+    truncated_df = pd.concat(truncated_df_list).reset_index(drop=True)
+    return truncated_df
+
+
+
 def train_test_split(log, test_size=0.2, random_state=1618, temporal=True,
                      encoding=None, trace_attr=None, attr_trace_dict=None):
 
@@ -89,7 +122,8 @@ def train_test_split(log, test_size=0.2, random_state=1618, temporal=True,
     if encoding == 'sequential':
         train = train.sort_values(by=['case:concept:name', 'time:timestamp'])
         test = test.sort_values(by=['case:concept:name', 'time:timestamp'])
-        train = encode_trace_log(train, trace_attr, attr_trace_dict)
-        test = encode_trace_log(test, trace_attr, attr_trace_dict)
+        test = get_running(test)
+        train = encode_trace_log(train, trace_attr, attr_trace_dict, type='train')
+        test = encode_trace_log(test, trace_attr, attr_trace_dict, type='test')
         
     return train, test
