@@ -13,7 +13,7 @@ import utils.log_parsing as log_parsing
 
 
 # Set the exp_name 
-exp_name = 'hospital'
+exp_name = 'bpi12'
 print(f"Experiment name set to: {exp_name}")
 
 print(f"Loading hyperparameters from 'hparams/{exp_name}.json'")
@@ -22,8 +22,8 @@ with open(f'hparams/{exp_name}.json') as f:
 print("Hyperparameters loaded successfully.")
 
 remove_outliers = False
-n_samples = 500
-n_simulations = 1
+n_samples = 10
+n_simulations = 500
 cf_preprocessing = hparams['cf_preprocessing']
 if cf_preprocessing == 'sequential':
     raise ValueError('Catboost does not support sequential encoding')
@@ -47,9 +47,9 @@ def fit_model(train_df, y, test_df, test_y):
     column_types = train_df.dtypes.astype(str).to_dict()
     
     params = {
-        'depth': 10,
-        'learning_rate': 0.0001,
-        'iterations': 100,
+        'depth': 12,
+        'learning_rate': 0.00001,
+        'iterations': 1000,
         'early_stopping_rounds': 100,
         'thread_count': 4,
         'logging_level': 'Verbose',
@@ -117,7 +117,7 @@ for seed in range(n_simulations):
     # print('The rMAE is ', round(rmae, 2))
 
     errors = (y_pred - y_test)
-    cvae = np.std(errors)/np.mean(y_test)
+    cvae = np.std(errors)#/np.mean(y_test)
 
     lmae.append(mae)
     lmape.append(mape)
@@ -146,12 +146,13 @@ print(f'The benchmark value for median are','-', round(mean_absolute_percentage_
         '-', round(mean_absolute_error(y_test, y_median), 2), '-', round(relative_mae(y_test, y_median), 2))
 
 
+
 print('\n'*8)
 
 print('The means are ', round(np.mean(lmae), 2),'-',
        round(np.mean(lmape), 2),'-', round(np.mean(lrmae), 2))
-print('The mean of cvae is ', round(np.mean(lcvae), 2))
-
+print('The stds are ', round(np.std(lmae), 2),'-',
+         round(np.std(lmape), 2),'-', round(np.std(lrmae), 2))
 
 
 
