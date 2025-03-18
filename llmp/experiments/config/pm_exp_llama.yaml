@@ -1,17 +1,18 @@
-experiment_name: "test"
+experiment_name: "test_llama"
 mode: "sample_only"
-llm_type: "phi-3-mini-128k-instruct"
+llm_type: "llama-3.1-8B"
 data_path: "./data/pm/consulta_1.0_0.007.pkl" # "./data/pm/consulta.pkl"
 output_dir: "./output/pm"
 plot_dir: "./plots/pm"
 batch_size: 1
-train_frac: 0.8
+train_frac: 1
+quantization: "8bit"
 prompt_ordering: "random"
 autoregressive: False
 max_generated_length: 8
 sort_x_test: False
 num_decimal_places_y: 0
-num_samples: 5
+num_samples: 50
 print_prompts: True
 y_prefix: ", Lead Time: "
 prefix: "The following is a process mining log. The values are current activity (concept:name) time from start, time from previous event, counts of past different activities

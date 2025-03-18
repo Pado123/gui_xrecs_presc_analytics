@@ -6,6 +6,7 @@ from tqdm import tqdm
 
 from .helpers import construct_prompts, get_num_from_gen, process_generated_results
 from .hf_api import hf_generate_batch, hf_generate
+from .hf_api import StaticCache
 
 def sample(args, tokenizer, model, results):   
     with torch.no_grad():
@@ -26,7 +27,7 @@ def sample(args, tokenizer, model, results):
             for idx, x in tqdm(enumerate(results['data']['x_test']), desc='Sampling'):
                 samples = [[] for _ in range(args.num_samples)]
                 per_sample_prompts = [[] for _ in range(args.num_samples)]
-                sample_indices_to_process = np.arange(0, args.num_samples).tolist()
+                sample_indices_to_process = np.arange(0, args.num_samples).tolist()                
                 while len(sample_indices_to_process) > 0:
                     batch_size = min(args.batch_size, len(sample_indices_to_process))
                     batch_indices = sample_indices_to_process[0 : batch_size]
@@ -47,7 +48,10 @@ def sample(args, tokenizer, model, results):
                             order=args.prompt_ordering,
                             add_spaces=False,
                             x_ordering=results['data']['x_ordering'] if 'x_ordering' in results['data'] else None,
-                            chat_template=chat_template
+                            chat_template=chat_template,
+                            model=model,
+                            tokenizer=tokenizer,
+                            max_new_tokens=args.max_generated_length
                         )
                         batch_prompts.append(prompt[0])
 
@@ -58,7 +62,7 @@ def sample(args, tokenizer, model, results):
                         temp=args.temperature, 
                         top_p=args.top_p,
                         max_new_tokens=args.max_generated_length,
-                        continue_final_message=continue_final_message
+                        static_cache=static_cache  # Pass the static cache
                     )
                     assert(len(res) == len(batch_indices))
                     for i, sample_index in enumerate(batch_indices):
@@ -95,6 +99,7 @@ def sample(args, tokenizer, model, results):
                 x_train=results['data']['x_train'],
                 y_train=results['data']['y_train'],
                 x_test=results['data']['x_test'],
+                train_frac=args.train_frac,
                 prefix=args.prefix,
                 x_prefix=args.x_prefix,
                 y_prefix=args.y_prefix,
@@ -107,35 +112,50 @@ def sample(args, tokenizer, model, results):
                 add_spaces=False,
                 x_ordering=results['data']['x_ordering'] if 'x_ordering' in results['data'] else None,
                 chat_template=chat_template,
-                tokenizer=tokenizer
+                tokenizer=tokenizer,
+                model=model,
+                max_new_tokens=args.max_generated_length
             )
+
+            # Create static cache for this prompt
+            # static_cache = StaticCache(
+            #         config=model.config,
+            #         max_batch_size=1,
+            #         max_cache_len=len(prompts[0]) + args.max_generated_length * 3,
+            #         device=model.device,
+            #         dtype=model.dtype
+            #     )
 
             num_prompts = len(prompts)
             for idx in tqdm(range(num_prompts), desc='Sampling'):
                 prompt = prompts[idx]
                 samples = []
                 num_samples = args.num_samples
-                while num_samples > 0:
-                    bs = min(args.batch_size, num_samples)
-                    res = hf_generate(
-                        model=model,
-                        tokenizer=tokenizer,
-                        input_str=prompt,
-                        batch_size=bs,
-                        temp=args.temperature, 
-                        top_p=args.top_p,
-                        max_new_tokens=args.max_generated_length
-                    )
-                    for j in range(len(res)):
-                        if get_num_from_gen(
-                            gen=res[j],
-                            break_str=args.break_str,
-                            dim_y=results['dim_y'],
-                            max_generated_length=args.max_generated_length,
-                            num_decimal_places_y=args.num_decimal_places_y
-                            ) is not None:
-                            samples.append(res[j]) # these are raw outputs
-                            num_samples -= 1
+                with tqdm(total=num_samples, desc=f'Prompt {idx+1}/{num_prompts}', leave=False) as pbar:
+                    # static_cache.reset()
+                    while num_samples > 0:
+                        bs = min(args.batch_size, num_samples)
+                        res = hf_generate(
+                            model=model,
+                            tokenizer=tokenizer,
+                            input_str=prompt,
+                            batch_size=bs,
+                            temp=args.temperature, 
+                            top_p=args.top_p,
+                            max_new_tokens=args.max_generated_length,
+                            # past_key_values=static_cache  # Pass the static cache
+                        )
+                        for j in range(len(res)):
+                            if get_num_from_gen(
+                                gen=res[j],
+                                break_str=args.break_str,
+                                dim_y=results['dim_y'],
+                                max_generated_length=args.max_generated_length,
+                                num_decimal_places_y=args.num_decimal_places_y
+                                ) is not None:
+                                samples.append(res[j]) # these are raw outputs
+                                num_samples -= 1
+                                pbar.update(1)
                 results['gen'][idx] += samples
 
             # Print out the first sample.

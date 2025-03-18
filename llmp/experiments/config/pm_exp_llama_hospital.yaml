@@ -1,0 +1,18 @@
+experiment_name: "hospital_llama"
+mode: "sample_only"
+llm_type: "llama-3.1-8B"
+data_path: "./data/pm/hospital.pkl"
+output_dir: "./output/pm/hospital"
+plot_dir: "./plots/pm"
+batch_size: 1
+train_frac: 1
+quantization: "8bit"
+prompt_ordering: "random"
+autoregressive: False
+max_generated_length: 8
+sort_x_test: False
+num_decimal_places_y: 0
+num_samples: 50
+print_prompts: True
+y_prefix: ", lead (total) time: "
+prefix: "The following is a process mining log, in which '#' is the count of different activities. The attributes are ordered as: current activity (concept:name), 'start:timestamp', 'time:timestamp', 'ETA_ACCESSO', 'COLORE_TRIAGE', 'ACCESSO_TRIAGE', 'C05B_PATOLOGIA_TRIAGE', 'C02_IDUNIVOCOASSISTITO', 'C06_DIAGNOSI_PRINCIPALE', 'C07_ESITO_DIMISSIONE', 'C103_ATTRIBUTO', 'activity_duration', 'day_of_week', 'hour_of_day', '# concept:name=ACCESSO', '# concept:name=TRIAGE', '# concept:name=VISITA', '# concept:name=DIMISSIONE', '# concept:name=USCITA', '# concept:name=PRELIEVO VENOSO', '# concept:name=LABORATORIO', '# concept:name=CONSULENZA: Pediatria', '# concept:name=RADIOLOGIA RICHIESTA: RX', '# concept:name=RADIOLOGIA ACCETTAZIONE: RX', '# concept:name=RADIOLOGIA ESECUZIONE: RX', '# concept:name=RADIOLOGIA REFERTAZIONE: RX', '# concept:name=CONSULENZA: ALTRO', '# concept:name=CONSULENZA: Ortopedia e traumatologia', '# concept:name=ECG', '# concept:name=CONSULENZA: Otorinolaringoiatria', '# concept:name=RADIOLOGIA RICHIESTA: TAC', '# concept:name=RADIOLOGIA ACCETTAZIONE: TAC', '# concept:name=RADIOLOGIA ESECUZIONE: TAC', '# concept:name=RADIOLOGIA REFERTAZIONE: TAC', '# concept:name=PRESTAZIONIPS: ALTRO', '# concept:name=CONSULENZA: Cardiologia', '# concept:name=OSSERVAZIONE: OBI', '# concept:name=CONSULENZA: Oculistica', '# concept:name=CONSULENZA: Neurologia', '# concept:name=CATETERISMO VENOSO PERIFERICO', '# concept:name=EMOGASANALISI', '# concept:name=PRELIEVO ARTERIOSO', '# concept:name=CONSULENZA: Ostetricia e ginecologia', '# concept:name=CONSULENZA: Chirurgia generale', '# concept:name=RADIOLOGIA RICHIESTA: Angio', '# concept:name=RADIOLOGIA ACCETTAZIONE: Angio', '# concept:name=RADIOLOGIA ESECUZIONE: Angio', '# concept:name=RADIOLOGIA REFERTAZIONE: Angio', '# concept:name=CONSULENZA: Urologia', '# concept:name=RADIOLOGIA RICHIESTA: ECO', '# concept:name=RADIOLOGIA ACCETTAZIONE: ECO', '# concept:name=RADIOLOGIA ESECUZIONE: ECO', '# concept:name=RADIOLOGIA REFERTAZIONE: ECO', '# concept:name=RADIOLOGIA RICHIESTA: RMN', '# concept:name=RADIOLOGIA ACCETTAZIONE: RMN', '# concept:name=RADIOLOGIA ESECUZIONE: RMN', '# concept:name=RADIOLOGIA REFERTAZIONE: RMN', '# concept:name=OSSERVAZIONE: OBI Pediatrica OSPEDALE', '# concept:name=OSSERVAZIONE: Medio Bassa Intensita', '# concept:name=OSSERVAZIONE: Alta Intensita', and finally the lead (total) time.\n"

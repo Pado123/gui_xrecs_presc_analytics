@@ -3,13 +3,15 @@ experiment_name: "test"
 data_path: "./data/functions/square_20_seed_0.pkl"
 llm_path: null
 llm_type: "llama-2-7B"
-prompt_ordering: "distance"
+prompt_ordering: "random"
 output_dir: "./output"
 plot_dir: "./plots"
 seed: 1
 num_decimal_places_x: 0
 num_decimal_places_y: 2
 batch_size: 5
+train_frac: 1.0
+quantization: null
 autoregressive: false
 prefix: ""
 x_prefix: ""

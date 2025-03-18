@@ -29,7 +29,7 @@ def main():
 
 	print(args, flush=True)
 
-	model, tokenizer = get_model_and_tokenizer(args.llm_path, args.llm_type)
+	model, tokenizer = get_model_and_tokenizer(args.llm_path, args.llm_type, args.quantization)
 	print("Model: ", model)
 	print("Tokenizer: ", tokenizer)
 	print("Model Config: ", model.config)

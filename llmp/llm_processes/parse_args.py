@@ -22,6 +22,8 @@ def init_option_parser():
     parser.add_argument('--num_decimal_places_x', type=int, default=0)
     parser.add_argument('--num_decimal_places_y', type=int, default=2)
     parser.add_argument('--batch_size', type=int, default=5)
+    parser.add_argument('--train_frac', type=float, default=1.0, help='Fraction of data to use for training.')
+    parser.add_argument('--quantization', choices=[None, "8bit", "4bit"], default=None, help='Quantization to use.')
     parser.add_argument("--autoregressive", type=bool, default=False,
                         help="If true, append the previous prediction to the current prompt.")
     parser.add_argument('--prefix', type=str, default='', help='Prompt prefix.')

@@ -132,10 +132,32 @@ def _format_query_data_point(x, dim_x, first_prefix, next_prefix):
        return f'{first_prefix}{x}{next_prefix}'
 
 
+def get_model_context_length(model):
+    """Get the maximum context length from model config."""
+    typical_fields = [
+        "max_position_embeddings", 
+        "n_positions", 
+        "seq_len", 
+        "seq_length", 
+        "n_ctx", 
+        # "sliding_window"
+    ]
+    
+    context_windows = [
+        getattr(model.config, field) 
+        for field in typical_fields 
+        if hasattr(model.config, field)
+    ]
+    
+    if context_windows:
+        return context_windows[-1]  # Get the last one as it's often the most relevant
+    return None
+
 def construct_prompts(
         x_train,
         y_train,
         x_test,
+        train_frac=1.0,
         prefix='',
         x_prefix='',
         y_prefix=', ',
@@ -149,9 +171,16 @@ def construct_prompts(
         add_spaces=False,
         x_ordering=None,
         chat_template=None,
-        tokenizer=None
+        tokenizer=None,
+        model=None,
+        max_new_tokens=128  # Reserve tokens for generation
         ):
-
+    
+    # Get model's context length if available
+    max_context_length = None
+    if model is not None:
+        max_context_length = get_model_context_length(model)
+    
     # Convert xy train and x test to str
     if x_ordering is not None:  # xs are already a string
         str_x_train = x_train
@@ -204,18 +233,77 @@ def construct_prompts(
         if chat_template and tokenizer:
             # Format as chat messages
             messages = [
-                {"role": "system", "content": "You are a process mining expert. You can predict the next value based on the previous values."},
+                {"role": "system", "content": "You are a process mining expert. You can predict the lead time, that is the total time that takes from start to end an activity, from process logs."},
                 {"role": "user", "content": prefix} if prefix else None,
-                {"role": "assistant", "content": "".join(ordered_points) + test_point}
+                {"role": "assistant", "content": ""},
             ]
-            prompt = tokenizer.apply_chat_template(messages, continue_final_message=True, tokenize=False)
+            base_prompt = tokenizer.apply_chat_template(messages, continue_final_message=True, tokenize=False)
+            base_tokens = len(tokenizer.encode(base_prompt))
+            
+            # Calculate remaining tokens for training points
+            if max_context_length:
+                available_tokens = max_context_length - base_tokens - max_new_tokens
+                available_tokens *= train_frac
+                
+                # Add training points until we reach the token limit
+                final_points = []
+                current_tokens = 0
+                for point in ordered_points:
+                    point_tokens = len(tokenizer.encode(point))
+                    if current_tokens + point_tokens > available_tokens:
+                        break
+                    final_points.append(point)
+                    current_tokens += point_tokens 
+                
+                # Add test point
+                test_tokens = len(tokenizer.encode(test_point))
+                if current_tokens + test_tokens <= available_tokens:
+                    prompt = base_prompt + "".join(final_points) + test_point
+                else:
+                    # If test point doesn't fit, remove last training point
+                    if final_points:
+                        final_points.pop()
+                    prompt = base_prompt + "".join(final_points) + test_point
+            else:
+                # If no context length found, use all points
+                prompt = base_prompt + "".join(ordered_points) + test_point
         else:
             # Traditional prompt format
-            prompt = prefix + "".join(ordered_points) + test_point
+            if max_context_length and tokenizer:
+                base_tokens = len(tokenizer.encode(prefix))
+                available_tokens = max_context_length - base_tokens - max_new_tokens
+                
+                final_points = []
+                current_tokens = 0
+                for point in ordered_points:
+                    point_tokens = len(tokenizer.encode(point))
+                    if current_tokens + point_tokens > available_tokens:
+                        break
+                    final_points.append(point)
+                    current_tokens += point_tokens
+                
+                test_tokens = len(tokenizer.encode(test_point))
+                if current_tokens + test_tokens <= available_tokens:
+                    prompt = prefix + "".join(final_points) + test_point
+                else:
+                    if final_points:
+                        final_points.pop()
+                    prompt = prefix + "".join(final_points) + test_point
+            else:
+                prompt = prefix + "".join(ordered_points) + test_point
             
         if remove_space:
             prompt = prompt.rstrip(' ')
         prompts.append(prompt)
+    
+    if max_context_length and tokenizer:
+        # Check if any prompts exceed the context length
+        for prompt in prompts:
+            if len(tokenizer.encode(prompt)) > max_context_length:
+                raise ValueError("Prompt exceeds model's maximum context length.")
+    
+    # Print the number of training points
+    print(f"The number of training points is {len(final_points)} out of {len(ordered_points)} ({len(final_points)/len(ordered_points) * 100:.2f} %)")
     
     return prompts
 
