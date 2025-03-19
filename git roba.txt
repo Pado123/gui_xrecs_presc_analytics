@@ -1,8 +1,0 @@
-git reset --soft HEAD~1   # Toglie ultimo commit ma non i cambiamenti che ho fatto
-git stash                 # Mette da parte i miei file, facendoli ignorare da git	
-git pull		  # pulla perchè siamo aggiornati adesso (io 2 indietro a fra)
-git stash pop  		  # pop da stash, quindi riaggiorna tutto
-
-
-
-Se avessimo lavorato sullo stesso file sarebbe più spono

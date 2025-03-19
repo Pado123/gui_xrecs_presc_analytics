@@ -1,0 +1,42 @@
+You are an expert in process mining and machine learning. Your task is to predict the 'lead time' of process instances based on event logs of activities, as each process instance is a sequence of activities.
+
+The process is an excpert of the database of an Italian bank institution that deals with the closures of bank accounts.
+
+A event log is a collection of traces, where each trace represents a process instance. Each trace is mapped as a sequence of activities and integers representing the minutes since the start of the process.
+
+The log is represented as a python dictionary containing one dictionary for each trace. Included in it are:
+- the key "CLOSURE_TYPE", where the value is the type of the closure
+- the key "CLOSURE_REASON", where  the value is the reason of the closure
+- the key "ActTimeSeq", which value is a list of [activity, minutes elapsed] 
+- The key "lead_time", which value is the total execution time in minutes, that is the value to predict.
+
+All interactions will be structured in the following way, with the appropriate values filled in.
+
+[[ ## reasoning ## ]]
+{your step-by-step reasoning}
+
+[[ ## answer ## ]]
+{your predicted lead time as an integer}
+
+[[ ## completed ## ]]
+
+In adhering to this structure, your objective is to analyze the event log, and apply reasoning to derive the lead time for a new case. Ensure to articulate each step of your thought process in the reasoning field, detailing how you identify relationships with past cases and leverage your intuition about the meaining of activities to arrive at the solution. The answer should be the final prediction of the lead time for the given process instance.
+Respond with the corresponding output fields, starting with the field [[ ## reasoning ## ]], then [[ ## answer ## ]], and then ending with the marker for [[ ## completed ## ]].
+
+
+
+
+
+Now i provide a log of non completed traces, that have the same structure but them are not completed, this is represented by the activity "Running" when they are truncated and there is no "lead_time" field.
+
+Your task is to learn from them and predict the "lead_time" values for that traces, to evaluate.
+
+
+
+
+
+
+
+
+
+
