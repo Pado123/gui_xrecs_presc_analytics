@@ -17,10 +17,17 @@ The code supports the use of 10 Gemini API keys, that can be retrieved at https:
 
 5. Encode the logs using the code main_pm4py.py, changinge the parameter exp_name in the script and runing it using "python3 main_pm4py.py", encoded logs will be shown in the "experiments" folder
 
-6. PAOLO MISSING
+6. Run the experiments with Gemini model by executing the script in llmp/gemini/gemini.py. You'll need to:
+   - Obtain an API key for Gemini and store it in a .env file
+   - Specify the dataset name, mode (`agg` for aggregated history or `seq` for sequential), and sample size
+   - Example command: `python llmp/gemini/gemini.py --dataset <dataset_name> --mode agg --sample_size 100 --api_key_name GEMINI_API_KEY`
+   - Results will be saved in the llmp/output/pm/<dataset_name> directory
 
-7. For visualizing prompts and results PAOLO MISSING
+7. For visualizing prompts and results, check the output JSON files generated in the llmp/output/pm/<dataset_name> directory. The files contain:
+   - Model predictions and actual values
+   - Evaluation metrics (MAE, MAPE, RMAE)
+   - Statistical analysis across multiple runs
+   - Full model responses for each prediction
 
 8. For the Catboost benchmark, change the parameter exp_name in the script tests/test_catboost.py and run it using "python3 tests/test_catboost.py"
 
-                  

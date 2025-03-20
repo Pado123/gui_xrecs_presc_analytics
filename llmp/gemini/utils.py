@@ -17,6 +17,17 @@ class ExperimentArgs:
     
     @classmethod
     def from_args(cls, args: argparse.Namespace) -> 'ExperimentArgs':
+        # If api_key_name is explicitly provided, use it directly
+        if hasattr(args, 'api_key_name') and args.api_key_name:
+            return cls(
+                sample_size=args.sample_size,
+                mode=args.mode,
+                k2=args.k2,
+                dataset=args.dataset,
+                api_key_name=args.api_key_name
+            )
+        
+        # Otherwise, use the mapping based on sample size
         # Define API key mapping based on k2 flag
         if not args.k2:
             sample_sizes_to_api = {
@@ -72,6 +83,11 @@ def create_argument_parser() -> argparse.ArgumentParser:
         action="store_true",
         default=False,
         help="Whether to use the second set of API keys"
+    )
+    parser.add_argument(
+        "--api_key_name",
+        type=str,
+        help="Explicitly specify API key name to use (overrides automatic selection)"
     )
     return parser
 
@@ -224,8 +240,17 @@ class PromptLoader:
             
         return mode_prompts['system_prompt'], mode_prompts['prompt_template']
 
-path = "/home/frazzetp/gui_xrecs_presc_analytics/llmp/data/pm/bac/preprocessed_log_sequential_train.json"
-# Example usage:
-data = read_json_file(path)
-formatted_text = json_to_lines(data)
-df = json_to_dataframe(data)
+
+if __name__ == "__main__":
+    parser = create_argument_parser()
+    args = parser.parse_args()
+    
+    # Example usage of ExperimentArgs
+    experiment_args = ExperimentArgs.from_args(args)
+    print(experiment_args)
+    # Example usage of the functions
+    path = "/home/frazzetp/gui_xrecs_presc_analytics/llmp/data/pm/bac/preprocessed_log_sequential_train.json"
+    # Example usage:
+    data = read_json_file(path)
+    formatted_text = json_to_lines(data)
+    df = json_to_dataframe(data)
