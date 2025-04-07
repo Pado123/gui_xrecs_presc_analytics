@@ -1,5 +1,5 @@
 {
-    "log_path": "logs/hospital_log_CONFIDENTIAL.csv",
+    "log_path": "logs/hospital.csv",
     "date_format": "%Y-%m-%dT%H:%M:%SZ",
     "cf_preprocessing": "aggr_hist",
     "start_date": "start:timestamp",
