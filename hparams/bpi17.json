@@ -4,5 +4,11 @@
     "cf_preprocessing": "aggr_hist",
     "start_date": "start:timestamp",
     "end_date": "time:timestamp",
-    "trace_attr": ["ApplicationType", "RequestedAmount"]
+    "trace_attr": [
+        "ApplicationType",
+        "RequestedAmount"
+    ],
+    "acts_not_freq": [
+        "W_Handle leads"
+    ]
 }

@@ -1,183 +1,196 @@
 # %% Train catboost
 import os
+curr_dir = '/home/padela/Scrivania/LLMs/gui_xrecs_presc_analytics'
+os.chdir(curr_dir)
+
 import catboost
 import pandas as pd
 import numpy as np
 import json
-from catboost import CatBoostRegressor, Pool
+import tqdm
+import sys
+from catboost import CatBoostRegressor, CatBoostClassifier, Pool
 import pm4py
 
-os.chdir('/home/padela/Scrivania/LLMs/gui_xrecs_presc_analytics')
-# import ipdb; ipdb.set_trace()
 import utils.log_parsing as log_parsing
 
+kpi = 'outcome_pred' #Can be either 'lead_time' or 'outcome_pred'
+cb_loss = 'Logloss' #  CrossEntropy' 
+case_studies = ['bpi12', 'purchasing', 'bac', 'bpi12', 'bpi17', 'hospital']
+samples = ['max', 100, 10, 2]
 
-# Set the exp_name 
-exp_name = 'bpi12'
-print(f"Experiment name set to: {exp_name}")
 
-print(f"Loading hyperparameters from 'hparams/{exp_name}.json'")
-with open(f'hparams/{exp_name}.json') as f:
-    hparams = json.load(f)
-print("Hyperparameters loaded successfully.")
-
-remove_outliers = False
-n_samples = 10
-n_simulations = 500
-cf_preprocessing = hparams['cf_preprocessing']
-if cf_preprocessing == 'sequential':
-    raise ValueError('Catboost does not support sequential encoding')
-
-df_train = pd.read_csv(f'experiments/{exp_name}/preprocessed_log_{cf_preprocessing}_train.csv')
-df_test = pd.read_csv(f'experiments/{exp_name}/preprocessed_log_{cf_preprocessing}_test.csv')
-
-if remove_outliers:
-    df_train = log_parsing.remove_outliers_iqr(df_train, 'lead_time')
-    df_test = log_parsing.remove_outliers_iqr(df_test, 'lead_time')
-    print('Outliers removed')
-
-if n_samples == 500:
-    print(f'The ratio of 500/len is {500/len(df_train)}')
-lmae, lmape, lrmae, lcvae = [], [], [], []
+def suppress_print():
+    
+    class SuppressPrint:
+        def __enter__(self):
+            self.original_stdout = sys.stdout  # Salva il riferimento originale di stdout
+            sys.stdout = open(os.devnull, 'w')  # Reindirizza stdout a /dev/null
+        
+        def __exit__(self, exc_type, exc_value, traceback):
+            sys.stdout.close()
+            sys.stdout = self.original_stdout  # Ripristina stdout originale
+    
+    return SuppressPrint()
 
 def fit_model(train_df, y, test_df, test_y):
 
-    categorical_features = train_df.select_dtypes(exclude=np.number).columns
-    train_df[categorical_features] = train_df[categorical_features].astype(str)
-    column_types = train_df.dtypes.astype(str).to_dict()
+        with suppress_print():
+            categorical_features = train_df.select_dtypes(exclude=np.number).columns
+            train_df[categorical_features] = train_df[categorical_features].astype(str)
+            column_types = train_df.dtypes.astype(str).to_dict()
+            
+            params = {
+                'depth': 8,
+                'learning_rate': 0.00001,
+                'iterations': 2500,
+                'early_stopping_rounds': 100,
+                'thread_count': 4,
+                'logging_level': 'Verbose',
+                'task_type': "CPU",  # "GPU" if int(os.environ["USE_GPU"]) else "CPU"
+                'loss_function': cb_loss
+            }
+
+            # print('Starting training...')
+            # params["loss_function"] = "MAE"
+            # print('The train and test shapes are ', train_df.shape, test_df.shape)
+            train_data = Pool(train_df, y, cat_features=categorical_features.values)
+            test_data = Pool(test_df, test_y, cat_features=categorical_features.values)
+
+            if kpi == 'lead_time':
+                model = CatBoostRegressor(**params)
+
+            elif kpi == 'outcome_pred':
+                model = CatBoostClassifier(**params)
+
+            model.fit(train_data, verbose=False, plot=False, eval_set=(test_data), use_best_model=True)
+
+        return model
+
+remove_outliers = False
+cf_preprocessing = 'aggr_hist' # hparams['cf_preprocessing']
+if cf_preprocessing == 'sequential':
+    raise ValueError('Catboost does not support sequential encoding')
+
+for exp_name in case_studies:
     
-    params = {
-        'depth': 12,
-        'learning_rate': 0.00001,
-        'iterations': 1000,
-        'early_stopping_rounds': 100,
-        'thread_count': 4,
-        'logging_level': 'Verbose',
-        'task_type': "CPU",  # "GPU" if int(os.environ["USE_GPU"]) else "CPU"
-        'loss_function': 'MAPE'
-    }
+    with open(f'hparams/{exp_name}.json') as f:
+        hparams = json.load(f)
+    df_train = pd.read_csv(f'experiments/{exp_name}/preprocessed_log_{cf_preprocessing}_train_{kpi}.csv')
+    df_test = pd.read_csv(f'experiments/{exp_name}/preprocessed_log_{cf_preprocessing}_test_{kpi}.csv')
 
-    # print('Starting training...')
-    # params["loss_function"] = "MAE"
-    # print('The train and test shapes are ', train_df.shape, test_df.shape)
-    train_data = Pool(train_df, y, cat_features=categorical_features.values)
-    test_data = Pool(test_df, test_y, cat_features=categorical_features.values)
+    if remove_outliers:
+        df_train = log_parsing.remove_outliers_iqr(df_train, 'lead_time')
+        df_test = log_parsing.remove_outliers_iqr(df_test, 'lead_time')
+        # print('Outliers removed')
 
-    model = CatBoostRegressor(**params)
-    model.fit(train_data, verbose=True, plot=False, eval_set=(test_data), use_best_model=True)
-    return model
+    for n_samples in samples:
+        print('\n'*2)
+        print('Case study is', exp_name, 'with samples', n_samples)
+        lmae, lmape, lrmae, lcvae = [], [], [], []
+        f_scores, precisions, recalls = [], [], []
 
-for seed in range(n_simulations):
+        if n_samples == 'max':
+            n_simulations = 1
+        else:
+            n_simulations = 10
 
-    # Import again the train
-    df_train = pd.read_csv(f'experiments/{exp_name}/preprocessed_log_{cf_preprocessing}_train.csv')
-    
-    rseed = int(1618 + seed)
-    try:    
-        df_train = df_train.sample(frac=1, random_state=rseed).reset_index(drop=True).iloc[:n_samples] 
-    except: 
-        print('Sampling not done')
-        None        
+        for seed in tqdm.tqdm(range(n_simulations)):
+            try:
+                
+                # Import again the train
+                df_train = pd.read_csv(f'experiments/{exp_name}/preprocessed_log_{cf_preprocessing}_train_{kpi}.csv')
+                
+                rseed = int(1618 + seed)
+                try:    
+                    df_train = df_train.sample(frac=1, random_state=rseed).reset_index(drop=True).iloc[:n_samples] 
+                except: 
+                    print('Sampling not done')
+                    None        
 
-    # #Set y as "lead_time"
-    y_train = df_train['lead_time']
-    y_test = df_test['lead_time']
+                #Set the y
+                if kpi == 'lead_time':
+                    # COl to remove
+                    act_to_encode = hparams["acts_not_freq"][0]
 
-    # #Remove from train 
-    X_train = df_train.drop(['lead_time'], axis=1)
-    X_test = df_test.drop(['lead_time'], axis=1)
+                    y_train = df_train['lead_time']
+                    y_test = df_test['lead_time']
 
-    model = fit_model(df_train.drop(['lead_time'], axis=1), 
-                df_train['lead_time'], df_test.drop(['lead_time'], 
-                    axis=1), df_test['lead_time'])
+                    # #Remove from train 
+                    X_train = df_train.drop(['lead_time'], axis=1)
+                    X_test = df_test.drop(['lead_time'], axis=1)
 
-    # Predict the value of y n_simulations
-    # print('Predict Catboost')
-    y_pred = model.predict(X_test)
+                elif kpi == 'outcome_pred':
+                    act_to_encode = hparams["acts_not_freq"][0]
 
-    # Print the mean for the y_pred
-    # print('The mean of y_true is ', round(np.mean(y_test), 2))
+                    y_train = df_train[f'occ_{act_to_encode}']
+                    y_test = df_test[f'occ_{act_to_encode}']
 
-    #Evaluate MAE using sklearn
-    from sklearn.metrics import mean_absolute_percentage_error
-    from sklearn.metrics import median_absolute_error
-    from sklearn.metrics import mean_absolute_error
-    from utils.plot_stats import relative_mae
+                    # #Remove from train 
+                    X_train = df_train.drop([f'occ_{act_to_encode}'], axis=1)
+                    X_test = df_test.drop([f'occ_{act_to_encode}'], axis=1)                
 
-    # y_pred = [y_test.median() for i in range(len(y_test))]
+                model = fit_model(X_train, y_train, X_test, y_test)
+                y_pred = model.predict(X_test)
 
-    mape = mean_absolute_percentage_error(y_test, y_pred)
-    # print('The MAPE is ', round(mse, 2)) 
+                #Evaluate MAE using sklearn
+                from sklearn.metrics import mean_absolute_percentage_error, median_absolute_error, mean_absolute_error, f1_score, precision_recall_fscore_support
+                from utils.plot_stats import relative_mae
 
-    mae = mean_absolute_error(y_test, y_pred)
-    # print('The MAE is ', round(mae, 2))
+                # y_pred = [y_test.median() for i in range(len(y_test))]
 
-    #Same with median 
-    rmae = relative_mae(y_test, y_pred)
-    # print('The rMAE is ', round(rmae, 2))
+                if kpi== 'lead_time':
+                    mape = mean_absolute_percentage_error(y_test, y_pred)
+                    # print('The MAPE is ', round(mse, 2)) 
 
-    errors = (y_pred - y_test)
-    cvae = np.std(errors)#/np.mean(y_test)
+                    mae = mean_absolute_error(y_test, y_pred)
+                    # print('The MAE is ', round(mae, 2))
 
-    lmae.append(mae)
-    lmape.append(mape)
-    lrmae.append(rmae)
-    lcvae.append(cvae)
-    print(f'{mae} - {mape} - {rmae}')
-    print(f'Iteration {seed+1} completed')
+                    #Same with median 
+                    rmae = relative_mae(y_test, y_pred)
+                    # print('The rMAE is ', round(rmae, 2))
 
-#Print an empty line for 8 lines
-print('\n'*8)
+                    errors = (y_pred - y_test)
+                    cvae = np.std(errors)#/np.mean(y_test)
 
-# Print the mean value of y_pred
-print(f'Using {n_samples} samples')
-print('The mean of y_pred is ', round(np.mean(y_pred), 2))
-print(f' The median of y_pred is {round(np.median(y_pred), 2)}')
-print(f' Test lenght is {len(df_test)}')
-print(f' Train lenght is {len(df_train)}')
-print('\n'*8)
+                    lmae.append(mae)
+                    lmape.append(mape)
+                    lrmae.append(rmae)
+                    lcvae.append(cvae)
 
-y_mean = np.full(len(y_test), np.mean(y_test))
-y_median = np.full(len(y_test), np.median(y_test))
-print(f'The benchmark value for mean are','-', round(mean_absolute_percentage_error(y_test, y_mean), 2),
-      '-', round(mean_absolute_error(y_test, y_mean), 2), '-', round(relative_mae(y_test, y_mean), 2))
+                elif kpi == 'outcome_pred':
 
-print(f'The benchmark value for median are','-', round(mean_absolute_percentage_error(y_test, y_median), 2),
-        '-', round(mean_absolute_error(y_test, y_median), 2), '-', round(relative_mae(y_test, y_median), 2))
+                    precision, recall, f_score = precision_recall_fscore_support(y_test, y_pred, average='macro')[:3]
+                    f_scores.append(f_score)
+                    precisions.append(precision)
+                    recalls.append(recall)
 
+            except:
+                print('Error in the simulation\'s sampling due to similarity')
 
+        #Print an empty line for separation
+        # print('\n'*2)
 
-print('\n'*8)
+        # Print the mean value of y_pred
+        print(f'Using {n_samples} samples for the log {exp_name} and {n_simulations} simulations')
+        print('The mean of y_pred is ', round(np.mean(y_pred), 2))
+        # print(f' The median of y_pred is {round(np.median(y_pred), 2)}')
+        # print(f' Test lenght is {len(df_test)}')
+        # print(f' Train lenght is {len(df_train)}')
+        # print(f' The log has {len(df_train["case:concept:name"].unique())} traces')
+        # print('\n'*8)
 
-print('The means are ', round(np.mean(lmae), 2),'-',
-       round(np.mean(lmape), 2),'-', round(np.mean(lrmae), 2))
-print('The stds are ', round(np.std(lmae), 2),'-',
-         round(np.std(lmape), 2),'-', round(np.std(lrmae), 2))
+        y_mean = np.full(len(y_test), np.mean(y_test))
+        y_median = np.full(len(y_test), np.median(y_test))
 
+        if kpi == 'lead_time':
+            print('The means are ', round(np.mean(lmae), 2),'-',
+                round(np.mean(lmape), 2),'-', round(np.mean(lrmae), 2))
+            print('The stds are ', round(np.std(lmae), 2),'-',
+                    round(np.std(lmape), 2),'-', round(np.std(lrmae), 2))
 
-
-
-# # #Plot the errors
-# import matplotlib.pyplot as plt
-
-# #Plot the mean and the median of the errors as line
-# errors = (y_pred - y_test)/y_test.mean()
-# plt.plot(y_test, errors, 'o')
-# plt.hlines(np.mean(errors), xmax=np.max(y_test), xmin=0, colors='r', label='Mean')
-# plt.hlines(np.median(errors), xmax=np.max(y_test), xmin=0, colors='b', label='Median')
-# plt.xlabel('True values')
-# plt.ylabel('Predicted values')
-# plt.title(f'Predicted vs True for {n_samples} examples')
-
-# # Plot the y-distribution
-# plt.figure()
-# plt.hist(y_test, bins=50, alpha=0.5, label='Test', density=True)
-# plt.hist(y_train, bins=50, alpha=0.5, label='Train', density=True)
-# plt.hist(y_pred, bins=50, alpha=0.5, label='Predicted', density=True)
-# plt.legend()
-# plt.title(f'True vs Predicted for {n_samples} examples {"" if remove_outliers else "without"} outliers')
-
-
-
-
+        if kpi == 'outcome_pred':
+            print('For the case study ', exp_name, 'with samples ', n_samples, 'F1 is ', round(np.mean(f_scores), 2), '± ', round(np.std(f_scores), 2),
+                'Precision is ', round(np.mean(precisions), 2), '± ', round(np.std(precisions), 2),
+                'Recall is ', round(np.mean(recalls), 2), '± ', round(np.std(recalls), 2))
 # %%

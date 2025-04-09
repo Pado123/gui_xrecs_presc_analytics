@@ -3,5 +3,22 @@
     "date_format": "%Y-%m-%dT%H:%M:%SZ",
     "cf_preprocessing": "aggr_hist",
     "start_date": "start:timestamp",
-    "end_date": "time:timestamp"
+    "end_date": "time:timestamp",
+    "acts_not_freq": [
+        "RADIOLOGIA RICHIESTA: TAC",
+        "CONSULENZA: ALTRO",
+        "CONSULENZA: Oculistica",
+        "CONSULENZA: Ortopedia e traumatologia",
+        "CONSULENZA: Pediatria",
+        "ECG",
+        "OSSERVAZIONE: OBI",
+        "RADIOLOGIA ACCETTAZIONE: ECO",
+        "RADIOLOGIA ACCETTAZIONE: TAC",
+        "RADIOLOGIA ESECUZIONE: ECO",
+        "RADIOLOGIA ESECUZIONE: TAC",
+        "RADIOLOGIA REFERTAZIONE: ECO",
+        "RADIOLOGIA REFERTAZIONE: TAC",
+        "RADIOLOGIA RICHIESTA: ECO"
+        
+    ]
 }

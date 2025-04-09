@@ -1,6 +1,10 @@
 {
     "log_path": "logs/PurchasingExample.xes",
     "date_format": "%Y-%m-%d %H:%M:%S%z",
+    "cf_preprocessing": "aggr_hist",
     "start_date": "start:timestamp",
-    "end_date": "time:timestamp"
+    "end_date": "time:timestamp",
+    "acts_not_freq": [
+        "Settle Dispute With Supplier"
+    ]
 }

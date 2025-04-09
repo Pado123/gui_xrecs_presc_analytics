@@ -1,7 +1,7 @@
 # %%
 import os 
 #Go to the main dir
-working_directory = '/home/padela/Desktop/LLMs_PM'
+working_directory = '/home/padela/Scrivania/LLMs/gui_xrecs_presc_analytics'
 os.chdir(working_directory)
 
 import pandas as pd
@@ -53,13 +53,21 @@ for exp_name in ['bac', 'bpi12', 'bpi17', 'hospital', 'purchasing']:
     # Use the function defined above    
     traces_freq = activity_frequency_in_traces(event_log)
 
+    acts_not_freq = []
+
     # For each key in the dictionary, print it with the value
     for key, value in traces_freq.items():
         freq = int(100*value/len(event_log['case:concept:name'].unique()))
 
         # If the frequence is between 5 and 20, print it
         if freq >= 5 and freq <= 20:
+            acts_not_freq.append(key)
             print(f"Activity: {key}, Frequency: {freq} %")
-
     
+    # Add act_not_freq into the hparams dict
+    hparams['acts_not_freq'] = acts_not_freq
+
+    # Save the hparams dict into a json file
+    with open(f'hparams/{exp_name}.json', 'w') as f:
+        json.dump(hparams, f, indent=4)
 # %%

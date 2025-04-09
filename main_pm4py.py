@@ -3,16 +3,20 @@ import pandas as pd
 import pm4py 
 import json
 import os
+curr_dir = '/home/padela/Scrivania/LLMs/gui_xrecs_presc_analytics'
+os.chdir(curr_dir)
 
-# Set the exp_name 
-exp_name = 'hospital'
-print(f"Experiment name set to: {exp_name}")
+# Set the exp_name and KPI
+exp_name = 'bpi17'
+kpi = 'outcome_pred' #Can be either 'lead_time' or 'outcome_pred'
+print(f"Experiment name set to: {exp_name}, KPI is set to: {kpi}")
 
 print(f"Loading hyperparameters from 'hparams/{exp_name}.json'")
 with open(f'hparams/{exp_name}.json') as f:
     hparams = json.load(f)
 print("Hyperparameters loaded successfully.")
 
+from utils import add_activity_outcome
 from utils import preprocessing_acts as pr_act
 from utils import preprocessing_times as pr_time
 from utils import log_parsing
@@ -55,6 +59,11 @@ if not os.path.exists(experiment_folder):
 log = log_parsing.drop_0s(log) 
 log = log_parsing.add_attr(log, attr_trace_dict, cf_preprocessing)
 
+if kpi == 'outcome_pred':
+    log = add_activity_outcome.add_activity_outcome(log, act_to_encode=hparams["acts_not_freq"][0])
+    del log['lead_time']
+    print("Activity outcome added.")
+    
 # IO.save_log(experiment_folder, log=log,
 #             encoding_cf=cf_preprocessing, type=None)
 print("Log saved.")
@@ -67,8 +76,10 @@ train, test = pr_time.train_test_split(log, test_size=0.2,
                                        attr_trace_dict=attr_trace_dict)
 
 IO.save_log(experiment_folder=experiment_folder, log=train,
-            encoding_cf=cf_preprocessing, type='train')
+            encoding_cf=cf_preprocessing, type='train', kpi=kpi)
 IO.save_log(experiment_folder=experiment_folder, log=test,
-            encoding_cf=cf_preprocessing, type='test')
+            encoding_cf=cf_preprocessing, type='test', kpi=kpi)
 print("Preprocessing Procedure completed.")
 
+
+# %%

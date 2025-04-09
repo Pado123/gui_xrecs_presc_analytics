@@ -101,7 +101,6 @@ def get_running(df, case_col="case:concept:name"):
     return truncated_df
 
 
-
 def train_test_split(log, test_size=0.2, random_state=1618, temporal=True,
                      encoding=None, trace_attr=None, attr_trace_dict=None):
 
