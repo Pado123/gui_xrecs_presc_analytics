@@ -3,7 +3,7 @@ import pandas as pd
 import random
 
 def encode_trace_log(input_log: pd.DataFrame, trace_attributes: 
-                     list, attr_trace_dict: dict, type: str) -> pd.DataFrame:
+                     list, attr_trace_dict: dict, type: str, kpi:str) -> pd.DataFrame:
     """
     Encodes an event log into a format where each trace is represented by a single row.
     
@@ -43,14 +43,24 @@ def encode_trace_log(input_log: pd.DataFrame, trace_attributes:
 
         if type == 'test':
             activity_time_seq.append(['Running'])
-        trace_info['ActTimeSeq'] = activity_time_seq
+            trace_info['ActTimeSeq'] = activity_time_seq
+            attr_trace_dict[trace_id] = trace_info
         
+        elif type == 'train':
+            if kpi == 'outcome_pred':
+                if group[str(list(group.columns)[-1])].iloc[-1] == 0:
+                    out = 'Will not Occur'
+                
+                else:
+                    out = 'Will Occur'
+                
+                trace_info[str(list(group.columns)[-1])[4:]] = out
 
-        trace_info['lead_time'] = group['lead_time'].iloc[0]
+            elif kpi == 'lead_time':
+                trace_info['lead_time'] = group['lead_time'].iloc[0]
+            
+            trace_info['ActTimeSeq'] = activity_time_seq
 
-        # Add to the main dictionary with the trace ID as the key
-        attr_trace_dict[trace_id] = trace_info
-    
     return attr_trace_dict
 
 def add_time_features(log, start_col='start:timestamp', end_col='time:timestamp'):
@@ -102,7 +112,7 @@ def get_running(df, case_col="case:concept:name"):
 
 
 def train_test_split(log, test_size=0.2, random_state=1618, temporal=True,
-                     encoding=None, trace_attr=None, attr_trace_dict=None):
+                     encoding=None, trace_attr=None, attr_trace_dict=None, kpi=None):
 
     case_ids = log['case:concept:name'].unique()
 
@@ -122,7 +132,7 @@ def train_test_split(log, test_size=0.2, random_state=1618, temporal=True,
         train = train.sort_values(by=['case:concept:name', 'time:timestamp'])
         test = test.sort_values(by=['case:concept:name', 'time:timestamp'])
         test = get_running(test)
-        train = encode_trace_log(train, trace_attr, attr_trace_dict, type='train')
-        test = encode_trace_log(test, trace_attr, attr_trace_dict, type='test')
+        train = encode_trace_log(train, trace_attr, attr_trace_dict, type='train', kpi=kpi)
+        test = encode_trace_log(test, trace_attr, attr_trace_dict, type='test', kpi=kpi)
         
     return train, test

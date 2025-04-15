@@ -15,8 +15,8 @@ import pm4py
 import utils.log_parsing as log_parsing
 
 kpi = 'outcome_pred' #Can be either 'lead_time' or 'outcome_pred'
-cb_loss = 'Logloss' #  CrossEntropy' 
-case_studies = ['bpi12', 'purchasing', 'bac', 'bpi12', 'bpi17', 'hospital']
+cb_loss = 'CrossEntropy' #  CrossEntropy' 
+case_studies = ['bpi12', 'purchasing', 'bac', 'bpi17', 'hospital']
 samples = ['max', 100, 10, 2]
 
 

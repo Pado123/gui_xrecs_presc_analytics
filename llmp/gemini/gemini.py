@@ -189,6 +189,7 @@ class ExperimentManager:
                 mape = mean_absolute_percentage_error([y_true_array], [y_pred_array])
                 rmae = None
             
+            #TODO: Aggiungi f-score per outcomes
             return mae, mape, rmae
             
         except (ValueError, TypeError) as e:

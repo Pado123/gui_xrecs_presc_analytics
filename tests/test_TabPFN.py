@@ -7,8 +7,11 @@ import json
 from catboost import CatBoostRegressor, Pool
 import pm4py
 from tabpfn import TabPFNRegressor
+import torch
+
 
 os.chdir('/home/padela/Scrivania/LLMs/gui_xrecs_presc_analytics')
+os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
 # import ipdb; ipdb.set_trace()
 import utils.log_parsing as log_parsing
 
@@ -23,7 +26,7 @@ with open(f'hparams/{exp_name}.json') as f:
 print("Hyperparameters loaded successfully.")
 
 remove_outliers = False
-n_samples = 50
+n_samples = 500
 n_simulations = 10
 cf_preprocessing = hparams['cf_preprocessing']
 if cf_preprocessing == 'sequential':
@@ -43,8 +46,9 @@ lmae, lmape, lrmae, lcvae = [], [], [], []
 
 def fit_model(train_df, y):
 
-    reg = TabPFNRegressor(random_state=1618)
-    reg.fit(train_df, y, )
+    reg = TabPFNRegressor(random_state=1618)#, device='cpu')
+    reg.fit(train_df, y)
+    torch.cuda.empty_cache()
     return reg
 
 for seed in range(n_simulations):
@@ -132,32 +136,6 @@ print('The means are ', round(np.mean(lmae), 2),'-',
        round(np.mean(lmape), 2),'-', round(np.mean(lrmae), 2))
 print('The stds are ', round(np.std(lmae), 2),'-',
          round(np.std(lmape), 2),'-', round(np.std(lrmae), 2))
-
-
-
-
-# # #Plot the errors
-# import matplotlib.pyplot as plt
-
-# #Plot the mean and the median of the errors as line
-# errors = (y_pred - y_test)/y_test.mean()
-# plt.plot(y_test, errors, 'o')
-# plt.hlines(np.mean(errors), xmax=np.max(y_test), xmin=0, colors='r', label='Mean')
-# plt.hlines(np.median(errors), xmax=np.max(y_test), xmin=0, colors='b', label='Median')
-# plt.xlabel('True values')
-# plt.ylabel('Predicted values')
-# plt.title(f'Predicted vs True for {n_samples} examples')
-
-# # Plot the y-distribution
-# plt.figure()
-# plt.hist(y_test, bins=50, alpha=0.5, label='Test', density=True)
-# plt.hist(y_train, bins=50, alpha=0.5, label='Train', density=True)
-# plt.hist(y_pred, bins=50, alpha=0.5, label='Predicted', density=True)
-# plt.legend()
-# plt.title(f'True vs Predicted for {n_samples} examples {"" if remove_outliers else "without"} outliers')
-
-
-
 
 # %%
 

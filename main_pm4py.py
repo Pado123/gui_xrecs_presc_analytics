@@ -7,7 +7,7 @@ curr_dir = '/home/padela/Scrivania/LLMs/gui_xrecs_presc_analytics'
 os.chdir(curr_dir)
 
 # Set the exp_name and KPI
-exp_name = 'bpi17'
+exp_name = 'bpi12'
 kpi = 'outcome_pred' #Can be either 'lead_time' or 'outcome_pred'
 print(f"Experiment name set to: {exp_name}, KPI is set to: {kpi}")
 
@@ -73,7 +73,8 @@ train, test = pr_time.train_test_split(log, test_size=0.2,
                                        random_state=1618, temporal=True, 
                                        encoding=cf_preprocessing,
                                        trace_attr=trace_attr,
-                                       attr_trace_dict=attr_trace_dict)
+                                       attr_trace_dict=attr_trace_dict,
+                                       kpi=kpi)
 
 IO.save_log(experiment_folder=experiment_folder, log=train,
             encoding_cf=cf_preprocessing, type='train', kpi=kpi)
