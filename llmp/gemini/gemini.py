@@ -26,7 +26,7 @@ class GenAI:
         prompt_loader = PromptLoader(dataset)
         self.system_prompt, self.prompt_template = prompt_loader.get_prompts_for_mode(mode)
 
-        self.model_name = "gemini-2.0-flash-thinking-exp-01-21" # "gemini-2.0-flash-exp"
+        self.model_name = "gemini-2.0-flash-exp" # "gemini-2.0-flash-exp"
         self.rate_limiter = RateLimiter(calls=1, per_seconds=12)
         
         genai.configure(api_key=api_key)
@@ -115,6 +115,8 @@ def setup_paths(data_root: Path, output_root: Path, dataset: str) -> tuple[Path,
     data_path = data_path.resolve()
     output_path = output_root / "pm" / dataset
     
+    print('data_path:', data_path)
+
     # Ensure data path exists
     if not data_path.exists():
         raise FileNotFoundError(f"Data path does not exist: {data_path}")
@@ -231,7 +233,7 @@ class ExperimentManager:
                         test_instance = test_data.iloc[idx, :-1]
                         y_true = test_data.iloc[idx, -1]
                         
-                        max_retries = 10
+                        max_retries = 1 #TODO: Questo param
                         retry_count = 0
                         while retry_count < max_retries:
                             try:
@@ -344,7 +346,7 @@ def main():
     print(f"Running experiment with args: {args}")
     
     # Setup paths
-    root_dir = Path("/home/frazzetp/gui_xrecs_presc_analytics/llmp")
+    root_dir = Path("/home/padela/Scrivania/LLMs/gui_xrecs_presc_analytics/llmp")
     
     output_filename = f"gemini_results_multiple_seeds_n{args.sample_size}{'_seq' if args.mode == 'seq' else ''}.json"
     

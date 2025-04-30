@@ -60,13 +60,13 @@ def create_argument_parser() -> argparse.ArgumentParser:
         description="Run Gemini experiments with different sample sizes"
     )
     parser.add_argument(
-        "sample_size",
+        "--sample_size",
         type=int,
         choices=[2, 10, 50, 100, 500],
         help="Number of training samples to use (must be one of: 2, 10, 50, 100, 500)"
     )
     parser.add_argument(
-        "dataset",
+        "--dataset",
         type=str,
         choices=["bac", "bpi12", "bpi17", "hospital", "purchasing", "production"],
         help="Dataset to use for the experiment"
