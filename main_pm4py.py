@@ -3,8 +3,8 @@ import pandas as pd
 import pm4py 
 import json
 import os
-curr_dir = '/home/padela/Scrivania/LLMs/gui_xrecs_presc_analytics'
-os.chdir(curr_dir)
+# curr_dir = '/home/padela/Scrivania/LLMs/gui_xrecs_presc_analytics'
+# os.chdir(curr_dir)
 
 # Set the exp_name and KPI
 exp_name = 'bpi12'
@@ -81,6 +81,7 @@ IO.save_log(experiment_folder=experiment_folder, log=train,
 IO.save_log(experiment_folder=experiment_folder, log=test,
             encoding_cf=cf_preprocessing, type='test', kpi=kpi)
 print("Preprocessing Procedure completed.")
+
 
 
 # %%

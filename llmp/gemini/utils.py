@@ -13,7 +13,9 @@ class ExperimentArgs:
     mode: str
     k2: bool
     dataset: str
+    kpi: str 
     api_key_name: Optional[str] = None
+    
     
     @classmethod
     def from_args(cls, args: argparse.Namespace) -> 'ExperimentArgs':
@@ -24,7 +26,8 @@ class ExperimentArgs:
                 mode=args.mode,
                 k2=args.k2,
                 dataset=args.dataset,
-                api_key_name=args.api_key_name
+                api_key_name=args.api_key_name,
+                kpi=args.kpi
             )
         
         # Otherwise, use the mapping based on sample size
@@ -74,7 +77,7 @@ def create_argument_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--mode",
         type=str,
-        choices=["agg", "seq"],
+        choices=["agg", "seq", "agg_outcomepred", "seq_outcomepred"],
         default="agg",
         help="Mode to run the experiment in (agg=aggregated or seq=sequential)"
     )
@@ -89,6 +92,14 @@ def create_argument_parser() -> argparse.ArgumentParser:
         type=str,
         help="Explicitly specify API key name to use (overrides automatic selection)"
     )
+    parser.add_argument(
+        "--kpi",
+        type=str,
+        choices=["lead_time", "outcome_pred"],
+        default="lead_time", 
+        help="lead_time or outcome_pred"
+    )
+
     return parser
 
 def read_json_file(file_path):

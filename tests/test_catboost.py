@@ -160,7 +160,7 @@ for exp_name in case_studies:
 
                 elif kpi == 'outcome_pred':
 
-                    precision, recall, f_score = precision_recall_fscore_support(y_test, y_pred, average='macro')[:3]
+                    precision, recall, f_score = precision_recall_fscore_support(y_test, y_pred, average='binary')[:3]
                     f_scores.append(f_score)
                     precisions.append(precision)
                     recalls.append(recall)
