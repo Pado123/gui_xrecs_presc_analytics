@@ -92,8 +92,9 @@ class GenAI:
                     test_case=test_instance.to_string(index=False)
                 )
             # print(f"Formatted content:\n{formatted_content}")
-            
+        
         elif self.mode in {"seq", "seq_outcomepred"}:
+            print(f"train_data:\n{train_data}")
             train_data_text = train_data['text']
             test_instance_text = test_instance['text']
             formatted_content = self.prompt_template.format(
@@ -199,8 +200,8 @@ class ExperimentManager:
             test = pd.read_csv(data_path / f"preprocessed_log_{file_suffix}_test_{kpi}.csv").drop(columns=columns_to_drop)
 
         elif mode in {"seq", "seq_outcomepred"}:
-            train = json_to_dataframe(data_path / f"preprocessed_log_{file_suffix}_train.json")
-            test = json_to_dataframe(data_path / f"preprocessed_log_{file_suffix}_test.json", test=True)
+            train = json_to_dataframe(data_path / f"preprocessed_log_{file_suffix}_train_{kpi}.json")
+            test = json_to_dataframe(data_path / f"preprocessed_log_{file_suffix}_test_{kpi}.json", test=True)
         
         train = train.sample(frac=1, random_state=train_seed).reset_index(drop=True).iloc[:n_samples]
         test = test.sample(frac=1, random_state=test_seed).reset_index(drop=True).head(5) # TODO: Cambia in base al numero di test samples che vuoi
@@ -415,7 +416,7 @@ class ExperimentManager:
 
                         print('y_trues', y_true_list)
                         print('y_preds', predictions_list)
-                        precision, recall, f1 = precision_recall_fscore_support([int(i) for i in y_true_list], [int(i) for i in predictions_list], average='macro')[:3]
+                        precision, recall, f1 = precision_recall_fscore_support([int(i) for i in y_true_list], [int(i) for i in predictions_list], average='micro')[:3]
                         print(f"Dove me li chiedo io è cosi: Precision: {precision}, Recall: {recall}, F1: {f1}")
 
                         # Store results for this train seed

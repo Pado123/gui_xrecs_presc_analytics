@@ -49,10 +49,9 @@ def encode_trace_log(input_log: pd.DataFrame, trace_attributes:
         elif type == 'train':
             if kpi == 'outcome_pred':
                 if group[str(list(group.columns)[-1])].iloc[-1] == 0:
-                    out = 'Will not Occur'
-                
+                    out = 0
                 else:
-                    out = 'Will Occur'
+                    out = 1
                 
                 trace_info[str(list(group.columns)[-1])[4:]] = out
 
