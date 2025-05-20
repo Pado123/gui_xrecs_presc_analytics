@@ -42,9 +42,13 @@ def encode_trace_log(input_log: pd.DataFrame, trace_attributes:
                 trace_info[attr] = group[attr].iloc[0]
 
         if type == 'test':
-            activity_time_seq.append(['Running'])
-            trace_info['ActTimeSeq'] = activity_time_seq
-            attr_trace_dict[trace_id] = trace_info
+            if type == 'lead_time':
+                activity_time_seq.append(['Running'])
+                trace_info['ActTimeSeq'] = activity_time_seq
+                attr_trace_dict[trace_id] = trace_info
+            else:
+                trace_info['ActTimeSeq'] = activity_time_seq
+                attr_trace_dict[trace_id] = trace_info
         
         elif type == 'train':
             if kpi == 'outcome_pred':
@@ -59,6 +63,7 @@ def encode_trace_log(input_log: pd.DataFrame, trace_attributes:
                 trace_info['lead_time'] = group['lead_time'].iloc[0]
             
             trace_info['ActTimeSeq'] = activity_time_seq
+            attr_trace_dict[trace_id] = trace_info
 
     return attr_trace_dict
 

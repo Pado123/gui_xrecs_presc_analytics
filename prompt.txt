@@ -1,6 +1,6 @@
 You are an expert in process mining and machine learning. Your task is to predict the 'lead time' of process instances based on event logs of activities, as each process instance is a sequence of activities.
 
-The process is an excpert of the database of an Italian bank institution that deals with the closures of bank accounts.
+The process is an excerpt of the database of an Italian bank institution that deals with the closures of bank accounts.
 
 A event log is a collection of traces, where each trace represents a process instance. Each trace is mapped as a sequence of activities and integers representing the minutes since the start of the process.
 

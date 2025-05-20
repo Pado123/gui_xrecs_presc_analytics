@@ -136,12 +136,12 @@ def json_to_lines(json_data):
     else:
         return str(json_data)
 
-def json_to_dataframe(json_data, test=False):
+def json_to_dataframe(json_data, test=False, kpi="lead_time"):
     """
     Convert JSON data to a pandas DataFrame with 'text' and 'lead_time' columns.
     
     The input can be either:
-    1. A path to a JSON file
+    1. A path to a JSON   file
     2. A dictionary where values are dictionaries containing 'lead_time'
     
     Args:
@@ -155,22 +155,41 @@ def json_to_dataframe(json_data, test=False):
         json_data = read_json_file(json_data)
         if json_data is None:
             raise ValueError("Invalid JSON file")
-    
-    rows = []
-    for entry in json_data.values():
-        if test:
-            # Extract lead_time
-            lead_time = entry.pop('lead_time', None)
-        else:
-            lead_time = entry['lead_time']
+
+    if kpi == "lead_time":
+        rows = []
+        for entry in json_data.values():
+            if test:
+                # Extract lead_time
+                lead_time = entry.pop('lead_time', None)
+            else:
+                lead_time = entry['lead_time']
+            
+            # Convert remaining dictionary to string
+            text = str(entry)
+            
+            rows.append({
+                'text': text,
+                'lead_time': lead_time
+            })
+
+    if kpi == "outcome_pred":
+        rows = []
+        for entry in json_data.values():
+            # Check presence of the activity
+            lead_time = 1 if "W_Nabellen incomplete dossiers" in entry else 0
+            
+            # Optionally remove the key from the entry for cleaner text
+            entry.pop("W_Nabellen incomplete dossiers", None)
+            
+            # Convert the rest to string
+            text = str(entry)
+
+            rows.append({
+                'text': text,
+                'W_Nabellen incomplete dossiers': lead_time
+            })
         
-        # Convert remaining dictionary to string
-        text = str(entry)
-        
-        rows.append({
-            'text': text,
-            'lead_time': lead_time
-        })
         
     return pd.DataFrame(rows)
 

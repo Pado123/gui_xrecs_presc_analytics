@@ -94,14 +94,14 @@ class GenAI:
             # print(f"Formatted content:\n{formatted_content}")
         
         elif self.mode in {"seq", "seq_outcomepred"}:
-            print(f"train_data:\n{train_data}")
+            # print(f"train_data:\n{train_data}")
             train_data_text = train_data['text']
             test_instance_text = test_instance['text']
             formatted_content = self.prompt_template.format(
                 examples="\n".join(train_data_text.astype(str)),
                 test_case=test_instance_text
             )
-            print(f"test_instance_text:\n{test_instance_text}")
+            # print(f"test_instance_text:\n{test_instance_text}")
 
         try:            
             response = self.model.generate_content(formatted_content)
@@ -200,11 +200,11 @@ class ExperimentManager:
             test = pd.read_csv(data_path / f"preprocessed_log_{file_suffix}_test_{kpi}.csv").drop(columns=columns_to_drop)
 
         elif mode in {"seq", "seq_outcomepred"}:
-            train = json_to_dataframe(data_path / f"preprocessed_log_{file_suffix}_train_{kpi}.json")
-            test = json_to_dataframe(data_path / f"preprocessed_log_{file_suffix}_test_{kpi}.json", test=True)
+            train = json_to_dataframe(data_path / f"preprocessed_log_{file_suffix}_train_{kpi}.json", kpi = kpi)
+            test = json_to_dataframe(data_path / f"preprocessed_log_{file_suffix}_test_{kpi}.json", test=True, kpi = kpi)
         
         train = train.sample(frac=1, random_state=train_seed).reset_index(drop=True).iloc[:n_samples]
-        test = test.sample(frac=1, random_state=test_seed).reset_index(drop=True).head(5) # TODO: Cambia in base al numero di test samples che vuoi
+        test = test.sample(frac=1, random_state=test_seed).reset_index(drop=True).head(8) # TODO: Cambia in base al numero di test samples che vuoi
         # print("ATTENTION ONLY 10 SAMPLES")
         
         return train, test
@@ -414,10 +414,10 @@ class ExperimentManager:
                                     print(f"\nRetrying prediction ({retry_count}/{max_retries}) due to error: {str(e)}")
                                     time.sleep(60 * retry_count**2)  # Add small delay between retries
 
-                        print('y_trues', y_true_list)
-                        print('y_preds', predictions_list)
-                        precision, recall, f1 = precision_recall_fscore_support([int(i) for i in y_true_list], [int(i) for i in predictions_list], average='micro')[:3]
-                        print(f"Dove me li chiedo io è cosi: Precision: {precision}, Recall: {recall}, F1: {f1}")
+                        # print('y_trues', y_true_list)
+                        # print('y_preds', predictions_list)
+                        precision, recall, f1 = precision_recall_fscore_support([int(i) for i in y_true_list], [int(i) for i in predictions_list], average='weighted')[:3]
+                        print(f"Precision: {precision}, Recall: {recall}, F1: {f1}")
 
                         # Store results for this train seed
                         train_results = {
@@ -524,7 +524,7 @@ def main():
     print(f"Using API key: {args.api_key_name}")
     model = GenAI(api_key, args.dataset, args.mode)
     
-    experiment = ExperimentManager(data_path, output_path, output_filename, model, n_seeds=3, kpi=args.kpi) #TODO: Cambia il numero di seeds
+    experiment = ExperimentManager(data_path, output_path, output_filename, model, n_seeds=8, kpi=args.kpi) #TODO: Cambia il numero di seeds
     experiment.run(sample_sizes=[args.sample_size])
     
     # Close the log file
