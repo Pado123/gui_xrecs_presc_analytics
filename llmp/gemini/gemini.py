@@ -27,7 +27,7 @@ class GenAI:
         prompt_loader = PromptLoader(dataset)
         self.system_prompt, self.prompt_template = prompt_loader.get_prompts_for_mode(mode)
 
-        self.model_name = "gemini-2.0-flash-exp" # "gemini-2.0-flash-exp"
+        self.model_name = "gemini-2.5-flash-preview-04-17" # "gemini-2.0-flash-exp"
         self.rate_limiter = RateLimiter(calls=1, per_seconds=12)
         
         genai.configure(api_key=api_key)
@@ -414,8 +414,8 @@ class ExperimentManager:
                                     print(f"\nRetrying prediction ({retry_count}/{max_retries}) due to error: {str(e)}")
                                     time.sleep(60 * retry_count**2)  # Add small delay between retries
 
-                        # print('y_trues', y_true_list)
-                        # print('y_preds', predictions_list)
+                        print('y_trues', y_true_list)
+                        print('y_preds', predictions_list)
                         precision, recall, f1 = precision_recall_fscore_support([int(i) for i in y_true_list], [int(i) for i in predictions_list], average='weighted')[:3]
                         print(f"Precision: {precision}, Recall: {recall}, F1: {f1}")
 
@@ -504,7 +504,8 @@ def main():
     print(f"Running experiment with args: {args}")
     
     # Setup paths
-    root_dir = Path("/home/padela/Desktop/LLMs_PM/llmp") # /home/padela/Scrivania/LLMs/gui_xrecs_presc_analytics/llmp
+    root_dir = "/home/padela/Scrivania/LLMs/gui_xrecs_presc_analytics/llmp" # "/home/padela/Desktop/LLMs_PM/llmp" #
+    root_dir = Path(root_dir)
     
     output_filename = f"gemini_results_multiple_seeds_n{args.sample_size}{'_seq' if args.mode == 'seq' else ''}.json"
     

@@ -46,25 +46,31 @@ def encode_trace_log(input_log: pd.DataFrame, trace_attributes:
                 activity_time_seq.append(['Running'])
                 trace_info['ActTimeSeq'] = activity_time_seq
                 attr_trace_dict[trace_id] = trace_info
-            else:
-                trace_info['ActTimeSeq'] = activity_time_seq
+            elif kpi == 'outcome_pred':
                 attr_trace_dict[trace_id] = trace_info
-        
-        elif type == 'train':
-            if kpi == 'outcome_pred':
+                trace_info['ActTimeSeq'] = activity_time_seq
                 if group[str(list(group.columns)[-1])].iloc[-1] == 0:
                     out = 0
                 else:
                     out = 1
-                
                 trace_info[str(list(group.columns)[-1])[4:]] = out
+        
+        elif type == 'train':
+            if kpi == 'outcome_pred':
+                attr_trace_dict[trace_id] = trace_info
+                trace_info['ActTimeSeq'] = activity_time_seq
+                if group[str(list(group.columns)[-1])].iloc[-1] == 0:
+                    out = 0
+                else:
+                    out = 1
+                trace_info[str(list(group.columns)[-1])[4:]] = out
+                
 
             elif kpi == 'lead_time':
-                trace_info['lead_time'] = group['lead_time'].iloc[0]
-            
-            trace_info['ActTimeSeq'] = activity_time_seq
-            attr_trace_dict[trace_id] = trace_info
-
+                attr_trace_dict[trace_id] = trace_info
+                trace_info['lead_time'] = group['lead_time'].iloc[0]               
+                trace_info['ActTimeSeq'] = activity_time_seq
+    
     return attr_trace_dict
 
 def add_time_features(log, start_col='start:timestamp', end_col='time:timestamp'):
