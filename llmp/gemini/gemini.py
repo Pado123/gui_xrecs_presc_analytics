@@ -42,7 +42,7 @@ class GenAI:
 
     def _extract_answer(self, text: str) -> float:
 
-        # print('il testo comincia qui:', text)
+        # print('il testo comincia qui:\n', text)
         # print('il testo finisce qui:')
 
         if self.mode in {"agg", "seq"}:
@@ -101,7 +101,7 @@ class GenAI:
                 examples="\n".join(train_data_text.astype(str)),
                 test_case=test_instance_text
             )
-            # print(f"test_instance_text:\n{test_instance_text}")
+            print(f"test_instance_text:\n{test_instance_text}")
 
         try:            
             response = self.model.generate_content(formatted_content)
@@ -204,9 +204,11 @@ class ExperimentManager:
             test = json_to_dataframe(data_path / f"preprocessed_log_{file_suffix}_test_{kpi}.json", test=True, kpi = kpi)
         
         train = train.sample(frac=1, random_state=train_seed).reset_index(drop=True).iloc[:n_samples]
-        test = test.sample(frac=1, random_state=test_seed).reset_index(drop=True).head(8) # TODO: Cambia in base al numero di test samples che vuoi
+        test = test.sample(frac=1, random_state=test_seed).reset_index(drop=True).head(5) # TODO: Cambia in base al numero di test samples che vuoi
+        # print(f"test cose: {test.iloc[:,-1].values} e test shape {test.shape}")
         # print("ATTENTION ONLY 10 SAMPLES")
-        
+        # print(f"train quello che vuoi te: {train.iloc[:,-1].mean()}")
+
         return train, test
 
     def evaluate_predictions(self, y_true: List[float], y_pred: List[float]) -> tuple[float, float, float, float]:
@@ -259,7 +261,7 @@ class ExperimentManager:
                         print(f"\nProcessing test_seed={test_seed}, train_seed={train_seed}")
                         
                         train_data, _ = self.load_data(self.data_path, n_samples, train_seed, test_seed, mode=self.mode, kpi=self.kpi)
-                        
+                        # print(f"train_data values:\n{train_data.iloc[:,-1].values}")
                         predictions_list = []
                         output_text_list = []
                         aes, apes = [], []
@@ -389,7 +391,7 @@ class ExperimentManager:
                         print(f"\nProcessing test_seed={test_seed}, train_seed={train_seed}")
                         
                         train_data, _ = self.load_data(self.data_path, n_samples, train_seed, test_seed, mode=self.mode, kpi=self.kpi)
-                        
+                        print(f"train_data values:\n{train_data.iloc[:,-1].values}")
                         predictions_list = []
                         output_text_list = []
                         precision_list, recall_list, f1_list = [], [], []   
@@ -398,8 +400,8 @@ class ExperimentManager:
                                     desc=f"Processing samples (n={n_samples}, test={test_idx}, train={train_idx})"):
                             test_instance = test_data.iloc[idx, :-1]
                             y_true = test_data.iloc[idx, -1]
-                            
-                            max_retries = 1 #TODO: Questo parametro si può cambiare
+
+                            max_retries = 5 #TODO: Questo parametro si può cambiare
                             retry_count = 0
                             while retry_count < max_retries:
                                 try:
@@ -414,8 +416,8 @@ class ExperimentManager:
                                     print(f"\nRetrying prediction ({retry_count}/{max_retries}) due to error: {str(e)}")
                                     time.sleep(60 * retry_count**2)  # Add small delay between retries
 
-                        print('y_trues', y_true_list)
-                        print('y_preds', predictions_list)
+                        print('y_test_rues', y_true_list)
+                        print('y_test_preds', predictions_list)
                         precision, recall, f1 = precision_recall_fscore_support([int(i) for i in y_true_list], [int(i) for i in predictions_list], average='weighted')[:3]
                         print(f"Precision: {precision}, Recall: {recall}, F1: {f1}")
 
@@ -525,7 +527,7 @@ def main():
     print(f"Using API key: {args.api_key_name}")
     model = GenAI(api_key, args.dataset, args.mode)
     
-    experiment = ExperimentManager(data_path, output_path, output_filename, model, n_seeds=8, kpi=args.kpi) #TODO: Cambia il numero di seeds
+    experiment = ExperimentManager(data_path, output_path, output_filename, model, n_seeds=5, kpi=args.kpi) #TODO: Cambia il numero di seeds
     experiment.run(sample_sizes=[args.sample_size])
     
     # Close the log file

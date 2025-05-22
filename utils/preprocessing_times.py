@@ -1,4 +1,3 @@
-
 import pandas as pd
 import random
 
@@ -59,11 +58,7 @@ def encode_trace_log(input_log: pd.DataFrame, trace_attributes:
             if kpi == 'outcome_pred':
                 attr_trace_dict[trace_id] = trace_info
                 trace_info['ActTimeSeq'] = activity_time_seq
-                if group[str(list(group.columns)[-1])].iloc[-1] == 0:
-                    out = 0
-                else:
-                    out = 1
-                trace_info[str(list(group.columns)[-1])[4:]] = out
+                trace_info[str(list(group.columns)[-1])[4:]] = int(group[str(list(group.columns)[-1])].mean()>0)
                 
 
             elif kpi == 'lead_time':

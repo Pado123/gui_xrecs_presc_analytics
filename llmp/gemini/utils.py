@@ -176,18 +176,19 @@ def json_to_dataframe(json_data, test=False, kpi="lead_time"):
     if kpi == "outcome_pred":
         rows = []
         for entry in json_data.values():
-            # Check presence of the activity
-            lead_time = 1 if "W_Nabellen incomplete dossiers" in entry else 0
+        
+            # Parse the last number in the dictionary values
+            lead_time = entry.pop(str(list(entry.keys())[-1]), None)
             
-            # Optionally remove the key from the entry for cleaner text
-            entry.pop("W_Nabellen incomplete dossiers", None)
-            
+            # Optionally remove the last key from the entry for cleaner text
+            entry.pop(str(list(entry.keys())[-1]), None)            
+
             # Convert the rest to string
             text = str(entry)
 
             rows.append({
                 'text': text,
-                'W_Nabellen incomplete dossiers': lead_time
+                'trace outcome': lead_time
             })
         
         
