@@ -4,7 +4,10 @@
     "cf_preprocessing": "aggr_hist",
     "start_date": "start:timestamp",
     "end_date": "time:timestamp",
+    "trace_attr": [
+        "AMOUNT_REQ"
+    ],
     "acts_not_freq": [
-        "W_Nabellen incomplete dossiers"
+        "W_Beoordelen fraude"
     ]
 }

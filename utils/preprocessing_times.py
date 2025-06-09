@@ -68,8 +68,14 @@ def encode_trace_log(input_log: pd.DataFrame, trace_attributes:
     
     return attr_trace_dict
 
-def add_time_features(log, start_col='start:timestamp', end_col='time:timestamp'):
+def add_time_features(log, start_col='start:timestamp', end_col='time:timestamp', date_format='%Y-%m-%d %H:%M:%S%z'):
     
+    # If the start and end columns are not in datetime format, convert them
+    if not pd.api.types.is_datetime64_any_dtype(log[start_col]):
+        log[start_col] = pd.to_datetime(log[start_col], format='mixed', utc=True)
+    if not pd.api.types.is_datetime64_any_dtype(log[end_col]):
+        log[end_col] = pd.to_datetime(log[end_col], format='mixed', utc=True)
+
     # Cast the time columns to unix 
     log['activity_duration'] = (log[end_col] - log[start_col])
     log['activity_duration'] = (log['activity_duration'].dt.total_seconds() / 60).round(0).astype(int)

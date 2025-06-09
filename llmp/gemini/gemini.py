@@ -27,7 +27,7 @@ class GenAI:
         prompt_loader = PromptLoader(dataset)
         self.system_prompt, self.prompt_template = prompt_loader.get_prompts_for_mode(mode)
 
-        self.model_name = "gemini-2.5-flash-preview-04-17" # "gemini-2.0-flash-exp"
+        self.model_name = "gemini-2.0-flash-exp" # "gemini-2.5-flash-preview-04-17" # 
         self.rate_limiter = RateLimiter(calls=1, per_seconds=12)
         
         genai.configure(api_key=api_key)
@@ -271,7 +271,7 @@ class ExperimentManager:
                             test_instance = test_data.iloc[idx, :-1]
                             y_true = test_data.iloc[idx, -1]
                             
-                            max_retries = 1 #TODO: Questo parametro si può cambiare
+                            max_retries = 12 #TODO: Questo parametro si può cambiare
                             retry_count = 0
                             while retry_count < max_retries:
                                 try:
@@ -416,7 +416,7 @@ class ExperimentManager:
                                     print(f"\nRetrying prediction ({retry_count}/{max_retries}) due to error: {str(e)}")
                                     time.sleep(60 * retry_count**2)  # Add small delay between retries
 
-                        print('y_test_rues', y_true_list)
+                        print('y_test_trues', y_true_list)
                         print('y_test_preds', predictions_list)
                         precision, recall, f1 = precision_recall_fscore_support([int(i) for i in y_true_list], [int(i) for i in predictions_list], average='weighted')[:3]
                         print(f"Precision: {precision}, Recall: {recall}, F1: {f1}")

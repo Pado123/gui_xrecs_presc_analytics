@@ -1,8 +1,10 @@
 {
     "log_path": "logs/production.xes",
     "date_format": "%Y-%m-%dT%H:%M:%S",
-    "cf_preprocessing": "sequential",
+    "cf_preprocessing": "aggr_hist",
     "start_date": "start:timestamp",
     "end_date": "time:timestamp",
-    "trace_attr": ["Work Order Qty", "Part Desc." ]
+    "trace_attr": ["Work Order Qty", "Part Desc." ],
+    "acts_not_freq": [
+        "Flat Grinding"]
 }

@@ -3,11 +3,11 @@ import pandas as pd
 import pm4py 
 import json
 import os
-# curr_dir = '/home/padela/Scrivania/LLMs/gui_xrecs_presc_analytics'
-# os.chdir(curr_dir)
+curr_dir = '/home/padela/Scrivania/LLMs/gui_xrecs_presc_analytics'
+os.chdir(curr_dir)
 
 # Set the exp_name and KPI
-exp_name = 'bpi12'
+exp_name = 'bpi17'
 kpi = 'outcome_pred' #Can be either 'lead_time' or 'outcome_pred'
 print(f"Experiment name set to: {exp_name}, KPI is set to: {kpi}")
 

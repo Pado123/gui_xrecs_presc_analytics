@@ -1,7 +1,7 @@
 {
     "log_path": "logs/PurchasingExample.xes",
     "date_format": "%Y-%m-%d %H:%M:%S%z",
-    "cf_preprocessing": "sequential",
+    "cf_preprocessing": "aggr_hist",
     "start_date": "start:timestamp",
     "end_date": "time:timestamp",
     "acts_not_freq": [

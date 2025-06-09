@@ -1,14 +1,10 @@
 {
     "log_path": "logs/bpi17_w.xes",
     "date_format": "%Y-%m-%dT%H:%M:%S",
-    "cf_preprocessing": "sequential",
+    "cf_preprocessing": "aggr_hist",
     "start_date": "start:timestamp",
     "end_date": "time:timestamp",
-    "trace_attr": [
-        "ApplicationType",
-        "RequestedAmount"
-    ],
     "acts_not_freq": [
-        "W_Handle leads"
+        "W_Assess potential fraud"
     ]
 }

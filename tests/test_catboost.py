@@ -16,8 +16,8 @@ import utils.log_parsing as log_parsing
 
 kpi = 'outcome_pred' #Can be either 'lead_time' or 'outcome_pred'
 cb_loss = 'CrossEntropy' #  CrossEntropy' 
-case_studies = ['bpi12', 'purchasing', 'bac', 'bpi17', 'hospital']
-samples = ['max', 100, 10, 2]
+case_studies = ['bpi17']
+samples = ['max']
 
 
 def suppress_print():
@@ -42,8 +42,8 @@ def fit_model(train_df, y, test_df, test_y):
             
             params = {
                 'depth': 8,
-                'learning_rate': 0.00001,
-                'iterations': 2500,
+                'learning_rate': 0.01,
+                'iterations': 5500,
                 'early_stopping_rounds': 100,
                 'thread_count': 4,
                 'logging_level': 'Verbose',
@@ -129,6 +129,8 @@ for exp_name in case_studies:
                     # #Remove from train 
                     X_train = df_train.drop([f'occ_{act_to_encode}'], axis=1)
                     X_test = df_test.drop([f'occ_{act_to_encode}'], axis=1)                
+                    X_train = X_train[X_test.columns]
+                    X_test = X_test[X_train.columns]
 
                 model = fit_model(X_train, y_train, X_test, y_test)
                 y_pred = model.predict(X_test)
@@ -160,7 +162,8 @@ for exp_name in case_studies:
 
                 elif kpi == 'outcome_pred':
 
-                    precision, recall, f_score = precision_recall_fscore_support(y_test, y_pred, average='binary')[:3]
+                    precision, recall, f_score = precision_recall_fscore_support(y_test, y_pred, average=None)[:3]
+                    print(f"Quello che ti serve ora è {f_score} - {precision} - {recall}")
                     f_scores.append(f_score)
                     precisions.append(precision)
                     recalls.append(recall)
@@ -193,4 +196,5 @@ for exp_name in case_studies:
             print('For the case study ', exp_name, 'with samples ', n_samples, 'F1 is ', round(np.mean(f_scores), 2), '± ', round(np.std(f_scores), 2),
                 'Precision is ', round(np.mean(precisions), 2), '± ', round(np.std(precisions), 2),
                 'Recall is ', round(np.mean(recalls), 2), '± ', round(np.std(recalls), 2))
+
 # %%
