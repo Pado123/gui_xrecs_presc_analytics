@@ -27,7 +27,7 @@ class GenAI:
         prompt_loader = PromptLoader(dataset)
         self.system_prompt, self.prompt_template = prompt_loader.get_prompts_for_mode(mode)
 
-        self.model_name = "gemini-2.0-flash-exp" # "gemini-2.5-flash-preview-04-17" # 
+        self.model_name = "gemini-2.0-flash" # "gemini-2.5-flash-preview-04-17" # 
         self.rate_limiter = RateLimiter(calls=1, per_seconds=12)
         
         genai.configure(api_key=api_key)
@@ -157,7 +157,7 @@ def setup_paths(data_root: Path, output_root: Path, dataset: str) -> tuple[Path,
 class ExperimentManager:
     """Manages experiment execution and results collection"""
     def __init__(self, data_path: Path, output_path: Path, output_filename: str, model: GenAI, kpi: str = "lead_time",
-                 base_seed: int = 1618, n_seeds: int = 10):
+                 base_seed: int = 42, n_seeds: int = 10):
         self.data_path = data_path
         self.output_path = output_path
         self.output_filename = output_filename

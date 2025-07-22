@@ -7,7 +7,7 @@ curr_dir = '/home/padela/Scrivania/LLMs/gui_xrecs_presc_analytics'
 os.chdir(curr_dir)
 
 # Set the exp_name and KPI
-exp_name = 'bpi17'
+exp_name = 'bpi12'
 kpi = 'outcome_pred' #Can be either 'lead_time' or 'outcome_pred'
 print(f"Experiment name set to: {exp_name}, KPI is set to: {kpi}")
 
@@ -34,9 +34,14 @@ end_date = hparams['end_date']
 parse_dates = [start_date, end_date]
 print(f"Log path: {log_path}, Date format: {date_format}, Parse dates: {parse_dates}")
 
-log, attr_trace_dict = pr_act.encode_log(log_path, case_id_name=case_id_name, parse_dates=parse_dates,
+log, attr_trace_dict, hasing_dict = pr_act.encode_log(log_path, case_id_name=case_id_name, parse_dates=parse_dates,
                          activity_column_name=activity_column_name, 
                          encoding=cf_preprocessing, last_act_num=3, trace_attr=trace_attr)
+
+print(f" Save the hasing_dict to 'hparams/{exp_name}_hasing_dict.json'")
+with open(f'experiments/{exp_name}/hasing_dict.json', 'w') as f:
+    json.dump(hasing_dict, f)
+print("Hashing dictionary saved successfully.")
 
 print("Activity history features added.")
 

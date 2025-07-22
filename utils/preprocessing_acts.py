@@ -1,5 +1,6 @@
 import pandas as pd
 import pm4py
+import json
 import tqdm
 
 def from_lifecycles_to_start_end(event_log):
@@ -41,6 +42,21 @@ def from_lifecycles_to_start_end(event_log):
 
     return combined_events
 
+def dump_hashing_act(log, activity_column_name='concept:name'):
+
+    # To each different activity, assign a progressive letter, then if they are more than 26, use two letters
+    unique_activities = log[activity_column_name].unique()
+    activity_hash = {}
+    for i, activity in enumerate(unique_activities):
+        if i < 26:
+            activity_hash[activity] = chr(65 + i)  # A-Z
+        else:
+            first_letter = chr(65 + (i // 26) - 1)
+            second_letter = chr(65 + (i % 26))
+            activity_hash[activity] = first_letter + second_letter  # AA, AB, ..., AZ, BA, BB, ...
+
+    # Return a dictionary mapping activities to their corresponding letters
+    return activity_hash
 
 def gen_attr_dict(df, trace_attr):
 
@@ -60,8 +76,8 @@ def gen_attr_dict(df, trace_attr):
     return attr_trace_dict
 
 
-def encode_log(df, case_id_name='case:concept:name', parse_dates=['start:timestamp','time:timestamp'], activity_column_name='concept:name',
-                 encoding='aggr_hist', last_act_num=3, trace_attr=None):
+def encode_log(df, case_id_name='case:concept:name', parse_dates=['start:timestamp','time:timestamp'], 
+               activity_column_name='concept:name', encoding='aggr_hist', last_act_num=3, trace_attr=None):
     """
     Adds historical information to a dataframe based on the specified encoding.
 
@@ -86,6 +102,8 @@ def encode_log(df, case_id_name='case:concept:name', parse_dates=['start:timesta
                 df = pd.read_csv(df, parse_dates=parse_dates)
         except Exception as e:
             raise ValueError(f"Error loading dataframe from path: {e}")
+
+    hasing_dict = dump_hashing_act(df, activity_column_name=activity_column_name)
 
     if not isinstance(df, pd.DataFrame):
         raise ValueError("The input must be a pandas DataFrame or a string path to a CSV/XES file.")
@@ -116,7 +134,7 @@ def encode_log(df, case_id_name='case:concept:name', parse_dates=['start:timesta
             # Sum the count from the previous events
             df[f"# {activity_column_name}={activity}"] = \
                 df.groupby(case_id_name)[f"# {activity_column_name}={activity}"].cumsum()
-        return df, attr_trace_dict
+        return df, attr_trace_dict, hasing_dict
 
     elif encoding == 'last_k':
         # Add columns for the last `last_act_num` activities
@@ -135,11 +153,11 @@ def encode_log(df, case_id_name='case:concept:name', parse_dates=['start:timesta
                         df.loc[idx, f'last_{i}_activity'] = None
                 # Update the history with the current activity
                 history.append(row[activity_column_name])
-        return df, attr_trace_dict
+        return df, attr_trace_dict, hasing_dict
 
     elif encoding == 'no_hist':  
-        return df, None
+        return df, None, hasing_dict
 
     elif encoding == 'sequential':
-        return df, attr_trace_dict
+        return df, attr_trace_dict, hasing_dict
         
