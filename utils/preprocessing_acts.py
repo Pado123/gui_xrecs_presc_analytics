@@ -58,6 +58,18 @@ def dump_hashing_act(log, activity_column_name='concept:name'):
     # Return a dictionary mapping activities to their corresponding letters
     return activity_hash
 
+def hash_log(log, activity_column_name='concept:name'):
+
+    # Generate the hashing dictionary
+    hasing_dict = dump_hashing_act(log, activity_column_name=activity_column_name)
+
+    # Replace every activity in the log with its corresponding letter
+    log[activity_column_name] = log[activity_column_name].map(hasing_dict)
+
+    #return the log with hashed activities
+    return log
+
+
 def gen_attr_dict(df, trace_attr):
 
     """

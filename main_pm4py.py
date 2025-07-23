@@ -3,8 +3,8 @@ import pandas as pd
 import pm4py 
 import json
 import os
-curr_dir = '/home/padela/Scrivania/LLMs/gui_xrecs_presc_analytics'
-os.chdir(curr_dir)
+# curr_dir = '/home/padela/Scrivania/LLMs/gui_xrecs_presc_analytics'
+# os.chdir(curr_dir)
 
 # Set the exp_name and KPI
 exp_name = 'bpi12'
@@ -26,6 +26,7 @@ from utils import IO
 log_path = hparams['log_path']
 date_format = hparams['date_format']
 cf_preprocessing = hparams['cf_preprocessing']
+hashed = hparams['hashed']
 case_id_name, activity_column_name, trace_attr = log_parsing.parse_cf_caseid_traceatt(hparams)
 
 #The first date is the start date of the log, the second date is the end date of the log
@@ -73,6 +74,11 @@ if kpi == 'outcome_pred':
 #             encoding_cf=cf_preprocessing, type=None)
 print("Log saved.")
 
+if hashed:
+    print("Hashing the log...")
+    log = pr_act.hash_log(log, activity_column_name=activity_column_name)
+    print("Log hashed.")
+
 # Split the log into train and test
 train, test = pr_time.train_test_split(log, test_size=0.2, 
                                        random_state=1618, temporal=True, 
@@ -82,9 +88,10 @@ train, test = pr_time.train_test_split(log, test_size=0.2,
                                        kpi=kpi)
 
 IO.save_log(experiment_folder=experiment_folder, log=train,
-            encoding_cf=cf_preprocessing, type='train', kpi=kpi)
+            encoding_cf=cf_preprocessing, type='train', kpi=kpi, hashed=hashed)
 IO.save_log(experiment_folder=experiment_folder, log=test,
-            encoding_cf=cf_preprocessing, type='test', kpi=kpi)
+            encoding_cf=cf_preprocessing, type='test', kpi=kpi, hashed=hashed)
+
 print("Preprocessing Procedure completed.")
 
 

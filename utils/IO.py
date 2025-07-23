@@ -1,13 +1,17 @@
 import pandas as pd
 import json 
 
-def save_log(experiment_folder, log, encoding_cf, type=None, kpi=None):
+# def hash_log(experiment_folder, log, encoding_cf, type=None, kpi=None):
 
+
+def save_log(experiment_folder, log, encoding_cf, type=None, kpi=None, hashed=False):
+
+    hashed = 'hashed' if hashed else None
     # Check the type of the log variable, if it is a pandas dataframe or a dict
     if isinstance(log, dict):
-        output_path = f'{experiment_folder}/preprocessed_log_sequential_{type}_{kpi}.json'
+        output_path = f'{experiment_folder}/preprocessed_log_sequential_{type}_{kpi}_{hashed}.json'
     elif isinstance(log, pd.DataFrame):
-        output_path = f'{experiment_folder}/preprocessed_log_{encoding_cf}_{type}_{kpi}.csv'
+        output_path = f'{experiment_folder}/preprocessed_log_{encoding_cf}_{type}_{kpi}_{hashed}.csv'
 
     # If the output path is a CSV file, save the log as a CSV
     if '.csv' in output_path:

@@ -145,5 +145,5 @@ def train_test_split(log, test_size=0.2, random_state=1618, temporal=True,
         test = get_running(test)
         train = encode_trace_log(train, trace_attr, attr_trace_dict, type='train', kpi=kpi)
         test = encode_trace_log(test, trace_attr, attr_trace_dict, type='test', kpi=kpi)
-        
+    
     return train, test

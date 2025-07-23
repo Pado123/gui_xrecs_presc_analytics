@@ -418,7 +418,7 @@ class ExperimentManager:
 
                         print('y_test_trues', y_true_list)
                         print('y_test_preds', predictions_list)
-                        precision, recall, f1 = precision_recall_fscore_support([int(i) for i in y_true_list], [int(i) for i in predictions_list], average='weighted')[:3]
+                        precision, recall, f1 = precision_recall_fscore_support([int(i) for i in y_true_list], [int(i) for i in predictions_list], average='binary')[:3]
                         print(f"Precision: {precision}, Recall: {recall}, F1: {f1}")
 
                         # Store results for this train seed
@@ -506,7 +506,7 @@ def main():
     print(f"Running experiment with args: {args}")
     
     # Setup paths
-    root_dir = "/home/padela/Scrivania/LLMs/gui_xrecs_presc_analytics/llmp" # "/home/padela/Desktop/LLMs_PM/llmp" #
+    root_dir = "/home/padela/Desktop/LLMs_PM/llmp" #"/home/padela/Scrivania/LLMs/gui_xrecs_presc_analytics/llmp" # 
     root_dir = Path(root_dir)
     
     output_filename = f"gemini_results_multiple_seeds_n{args.sample_size}{'_seq' if args.mode == 'seq' else ''}.json"

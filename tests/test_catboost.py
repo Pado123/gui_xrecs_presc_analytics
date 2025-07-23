@@ -1,6 +1,6 @@
 # %% Train catboost
 import os
-curr_dir = '/home/padela/Scrivania/LLMs/gui_xrecs_presc_analytics'
+curr_dir = '/home/padela/Desktop/LLMs_PM'
 os.chdir(curr_dir)
 
 import catboost
@@ -16,7 +16,7 @@ import utils.log_parsing as log_parsing
 
 kpi = 'outcome_pred' #Can be either 'lead_time' or 'outcome_pred'
 cb_loss = 'CrossEntropy' #  CrossEntropy' 
-case_studies = ['bpi17']
+case_studies = ['bpi12']
 samples = ['max']
 
 
@@ -42,8 +42,8 @@ def fit_model(train_df, y, test_df, test_y):
             
             params = {
                 'depth': 8,
-                'learning_rate': 0.01,
-                'iterations': 5500,
+                'learning_rate': 0.00001,
+                'iterations': 2500,
                 'early_stopping_rounds': 100,
                 'thread_count': 4,
                 'logging_level': 'Verbose',
