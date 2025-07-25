@@ -1,6 +1,7 @@
 {
     "log_path": "logs/hospital.csv",
     "date_format": "%Y-%m-%dT%H:%M:%SZ",
+    "hashed": false,
     "cf_preprocessing": "sequential",
     "start_date": "start:timestamp",
     "end_date": "time:timestamp",    

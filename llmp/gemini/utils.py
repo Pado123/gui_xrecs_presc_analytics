@@ -13,6 +13,7 @@ class ExperimentArgs:
     mode: str
     k2: bool
     dataset: str
+    hashed: bool
     kpi: str 
     api_key_name: Optional[str] = None
     
@@ -27,6 +28,7 @@ class ExperimentArgs:
                 k2=args.k2,
                 dataset=args.dataset,
                 api_key_name=args.api_key_name,
+                hashed=args.hashed,
                 kpi=args.kpi
             )
         
@@ -98,6 +100,11 @@ def create_argument_parser() -> argparse.ArgumentParser:
         choices=["lead_time", "outcome_pred"],
         default="lead_time", 
         help="lead_time or outcome_pred"
+    )
+    parser.add_argument(
+        "--hashed",
+        type=bool,
+        default=False
     )
 
     return parser

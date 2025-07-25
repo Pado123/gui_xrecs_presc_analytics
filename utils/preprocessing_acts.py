@@ -2,7 +2,22 @@ import pandas as pd
 import pm4py
 import json
 import tqdm
+import random
+import string
 
+# Set random seed for reproducibility
+random.seed(1618)
+
+# Define the character set: uppercase letters + digits 
+charset = string.ascii_uppercase + string.digits
+
+# Helper function to generate a random 4-character code
+def generate_random_code(existing_codes, length=4):
+    while True:
+        code = ''.join(random.choices(charset, k=length))
+        if code not in existing_codes:
+            return code
+        
 def from_lifecycles_to_start_end(event_log):
     """
     Transforms the event log so that each activity in a trace is represented by a single row
@@ -42,29 +57,50 @@ def from_lifecycles_to_start_end(event_log):
 
     return combined_events
 
-def dump_hashing_act(log, activity_column_name='concept:name'):
+def dump_hashing(log, column_name='concept:name'):
 
     # To each different activity, assign a progressive letter, then if they are more than 26, use two letters
-    unique_activities = log[activity_column_name].unique()
+    unique_activities = log[column_name].unique()
     activity_hash = {}
+    existing_codes = set()
     for i, activity in enumerate(unique_activities):
-        if i < 26:
-            activity_hash[activity] = chr(65 + i)  # A-Z
-        else:
-            first_letter = chr(65 + (i // 26) - 1)
-            second_letter = chr(65 + (i % 26))
-            activity_hash[activity] = first_letter + second_letter  # AA, AB, ..., AZ, BA, BB, ...
+            code = generate_random_code(existing_codes, length=4)
+            activity_hash[activity] = code
 
     # Return a dictionary mapping activities to their corresponding letters
     return activity_hash
 
-def hash_log(log, activity_column_name='concept:name'):
+def hash_log(log, activity_column_name='concept:name', kpi=None, trace_attr=None):
 
     # Generate the hashing dictionary
-    hasing_dict = dump_hashing_act(log, activity_column_name=activity_column_name)
+    hashing_dict_act = dump_hashing(log, column_name=activity_column_name)
+    hashing_dict_attr = dict()
+    if trace_attr:
+        for attr in trace_attr:
+            # Generate a random code for each attribute
+            code = dump_hashing(log, column_name=attr)
+            hashing_dict_attr[attr] = code
 
+    print(hashing_dict_attr)
     # Replace every activity in the log with its corresponding letter
-    log[activity_column_name] = log[activity_column_name].map(hasing_dict)
+    log[activity_column_name] = log[activity_column_name].map(hashing_dict_act)
+    for trace_att in trace_attr:
+        if trace_att in log.columns:
+            # Replace the attribute values with their corresponding codes
+            log[trace_att] = log[trace_att].map(hashing_dict_attr[trace_att])
+
+
+    # If there is the name of an activity in the last column name, map that name as well
+    if kpi == 'outcome_pred':
+        last_col_name = str(list(log.columns)[-1])
+
+        # If the name of one activity in the keys of hashing_dict is in the last column, map it as well
+        if any(activity in last_col_name for activity in hashing_dict_act.keys()):
+            # Modify the last column name to match the hashed activity
+            for activity, code in hashing_dict_act.items():
+                if activity in last_col_name:
+                    log.rename(columns={last_col_name: f"occ_{code}"}, inplace=True)
+                    break
 
     #return the log with hashed activities
     return log
@@ -115,7 +151,7 @@ def encode_log(df, case_id_name='case:concept:name', parse_dates=['start:timesta
         except Exception as e:
             raise ValueError(f"Error loading dataframe from path: {e}")
 
-    hasing_dict = dump_hashing_act(df, activity_column_name=activity_column_name)
+    hashing_dict_act = dump_hashing(df, column_name=activity_column_name)
 
     if not isinstance(df, pd.DataFrame):
         raise ValueError("The input must be a pandas DataFrame or a string path to a CSV/XES file.")
@@ -146,7 +182,7 @@ def encode_log(df, case_id_name='case:concept:name', parse_dates=['start:timesta
             # Sum the count from the previous events
             df[f"# {activity_column_name}={activity}"] = \
                 df.groupby(case_id_name)[f"# {activity_column_name}={activity}"].cumsum()
-        return df, attr_trace_dict, hasing_dict
+        return df, attr_trace_dict, hashing_dict_act
 
     elif encoding == 'last_k':
         # Add columns for the last `last_act_num` activities
@@ -165,11 +201,11 @@ def encode_log(df, case_id_name='case:concept:name', parse_dates=['start:timesta
                         df.loc[idx, f'last_{i}_activity'] = None
                 # Update the history with the current activity
                 history.append(row[activity_column_name])
-        return df, attr_trace_dict, hasing_dict
+        return df, attr_trace_dict, hashing_dict_act
 
     elif encoding == 'no_hist':  
-        return df, None, hasing_dict
+        return df, None, hashing_dict_act
 
     elif encoding == 'sequential':
-        return df, attr_trace_dict, hasing_dict
+        return df, attr_trace_dict, hashing_dict_act
         

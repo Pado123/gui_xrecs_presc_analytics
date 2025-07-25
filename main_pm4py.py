@@ -7,7 +7,7 @@ import os
 # os.chdir(curr_dir)
 
 # Set the exp_name and KPI
-exp_name = 'bpi12'
+exp_name = 'hospital'
 kpi = 'outcome_pred' #Can be either 'lead_time' or 'outcome_pred'
 print(f"Experiment name set to: {exp_name}, KPI is set to: {kpi}")
 
@@ -76,7 +76,8 @@ print("Log saved.")
 
 if hashed:
     print("Hashing the log...")
-    log = pr_act.hash_log(log, activity_column_name=activity_column_name)
+    log = pr_act.hash_log(log, activity_column_name=activity_column_name, 
+                          kpi=kpi, trace_attr=trace_attr)
     print("Log hashed.")
 
 # Split the log into train and test

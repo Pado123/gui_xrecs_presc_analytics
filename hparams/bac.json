@@ -1,6 +1,7 @@
 {
     "log_path": "logs/bac.xes",
     "date_format": "%Y-%m-%d %H:%M:%S%z",
+    "hashed": false, 
     "cf_preprocessing": "sequential",
     "start_date": "start:timestamp",
     "end_date": "time:timestamp",
@@ -9,10 +10,10 @@
         "CLOSURE_REASON"
     ],
     "acts_not_freq": [
+        "Network Adjustment Requested",
         "Pending Request for acquittance of heirs",
         "Back-Office Adjustment Requested",
         "Evaluating Request (WITH registered letter)",
-        "Network Adjustment Requested",
         "Request deleted"
     ]
 }

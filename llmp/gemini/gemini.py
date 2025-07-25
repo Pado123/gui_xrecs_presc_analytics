@@ -157,7 +157,7 @@ def setup_paths(data_root: Path, output_root: Path, dataset: str) -> tuple[Path,
 class ExperimentManager:
     """Manages experiment execution and results collection"""
     def __init__(self, data_path: Path, output_path: Path, output_filename: str, model: GenAI, kpi: str = "lead_time",
-                 base_seed: int = 42, n_seeds: int = 10):
+                 base_seed: int = 42, n_seeds: int = 10, hashed: bool = False):
         self.data_path = data_path
         self.output_path = output_path
         self.output_filename = output_filename
@@ -167,11 +167,12 @@ class ExperimentManager:
         self.n_seeds = n_seeds
         self.mode = model.mode  # Add this line to store the mode
         self.kpi = kpi  
+        self.hashed = hashed
 
-        print(f"ExperimentManager initialized with data_path={data_path}, output_path={output_path}, output_filename={output_filename} and kpi={kpi}")
+        print(f"ExperimentManager initialized with data_path={data_path}, output_path={output_path}, output_filename={output_filename}, kpi={kpi} and hashed={hashed}")
 
     @staticmethod
-    def load_data(data_path: Path, n_samples: int, train_seed: int, test_seed: int, kpi: str, mode: str = "agg") -> tuple[pd.DataFrame, pd.DataFrame]:
+    def load_data(data_path: Path, n_samples: int, train_seed: int, test_seed: int, kpi: str, hashed: bool = False, mode: str = "agg") -> tuple[pd.DataFrame, pd.DataFrame]:
         """
         Load and preprocess the training and test datasets with specific seeds.
         
@@ -188,7 +189,7 @@ class ExperimentManager:
         """
         # Determine file suffix based on mode
         file_suffix = "aggr_hist" if mode in {"agg", "agg_outcomepred"} else "sequential"
-
+        hashed = "_hashed" if hashed else ""
         print(f"Loading data for mode: {mode}, file_suffix: {file_suffix} and kpi: {kpi}")
 
         if mode in {"agg", "agg_outcomepred"}:
@@ -204,7 +205,7 @@ class ExperimentManager:
             test = json_to_dataframe(data_path / f"preprocessed_log_{file_suffix}_test_{kpi}.json", test=True, kpi = kpi)
         
         train = train.sample(frac=1, random_state=train_seed).reset_index(drop=True).iloc[:n_samples]
-        test = test.sample(frac=1, random_state=test_seed).reset_index(drop=True).head(5) # TODO: Cambia in base al numero di test samples che vuoi
+        test = test.sample(frac=1, random_state=test_seed).reset_index(drop=True).head(20) # TODO: Cambia in base al numero di test samples che vuoi
         # print(f"test cose: {test.iloc[:,-1].values} e test shape {test.shape}")
         # print("ATTENTION ONLY 10 SAMPLES")
         # print(f"train quello che vuoi te: {train.iloc[:,-1].mean()}")
@@ -247,7 +248,7 @@ class ExperimentManager:
                     test_results = {"train_seeds": {}, "aggregated_metrics": {}}
                     
                     # Load test data once for this seed
-                    _, test_data = self.load_data(self.data_path, n_samples, test_seed, test_seed, mode=self.mode, kpi=self.kpi)
+                    _, test_data = self.load_data(self.data_path, n_samples, test_seed, test_seed, mode=self.mode, hashed=self.hashed, kpi=self.kpi)
                     y_true_list = test_data.iloc[:, -1].tolist()
                     
                     all_train_metrics = {
@@ -260,7 +261,7 @@ class ExperimentManager:
                         train_seed = self.base_seed + train_idx
                         print(f"\nProcessing test_seed={test_seed}, train_seed={train_seed}")
                         
-                        train_data, _ = self.load_data(self.data_path, n_samples, train_seed, test_seed, mode=self.mode, kpi=self.kpi)
+                        train_data, _ = self.load_data(self.data_path, n_samples, train_seed, test_seed, mode=self.mode, hashed=self.hashed, kpi=self.kpi)
                         # print(f"train_data values:\n{train_data.iloc[:,-1].values}")
                         predictions_list = []
                         output_text_list = []
@@ -271,7 +272,7 @@ class ExperimentManager:
                             test_instance = test_data.iloc[idx, :-1]
                             y_true = test_data.iloc[idx, -1]
                             
-                            max_retries = 12 #TODO: Questo parametro si può cambiare
+                            max_retries = 100 #TODO: Questo parametro si può cambiare
                             retry_count = 0
                             while retry_count < max_retries:
                                 try:
@@ -377,7 +378,7 @@ class ExperimentManager:
                     test_results = {"train_seeds": {}, "aggregated_metrics": {}}
                     
                     # Load test data once for this seed
-                    _, test_data = self.load_data(self.data_path, n_samples, test_seed, test_seed, mode=self.mode, kpi=self.kpi)
+                    _, test_data = self.load_data(self.data_path, n_samples, test_seed, test_seed, mode=self.mode, hashed=self.hashed, kpi=self.kpi)
                     y_true_list = test_data.iloc[:, -1].tolist()
 
                     all_train_metrics = {
@@ -390,7 +391,7 @@ class ExperimentManager:
                         train_seed = self.base_seed + train_idx
                         print(f"\nProcessing test_seed={test_seed}, train_seed={train_seed}")
                         
-                        train_data, _ = self.load_data(self.data_path, n_samples, train_seed, test_seed, mode=self.mode, kpi=self.kpi)
+                        train_data, _ = self.load_data(self.data_path, n_samples, train_seed, test_seed, mode=self.mode, hashed=self.hashed, kpi=self.kpi)
                         print(f"train_data values:\n{train_data.iloc[:,-1].values}")
                         predictions_list = []
                         output_text_list = []
@@ -418,7 +419,7 @@ class ExperimentManager:
 
                         print('y_test_trues', y_true_list)
                         print('y_test_preds', predictions_list)
-                        precision, recall, f1 = precision_recall_fscore_support([int(i) for i in y_true_list], [int(i) for i in predictions_list], average='binary')[:3]
+                        precision, recall, f1 = precision_recall_fscore_support([int(i) for i in y_true_list], [int(i) for i in predictions_list], average='weighted')[:3]
                         print(f"Precision: {precision}, Recall: {recall}, F1: {f1}")
 
                         # Store results for this train seed
@@ -506,7 +507,7 @@ def main():
     print(f"Running experiment with args: {args}")
     
     # Setup paths
-    root_dir = "/home/padela/Desktop/LLMs_PM/llmp" #"/home/padela/Scrivania/LLMs/gui_xrecs_presc_analytics/llmp" # 
+    root_dir = "/home/padela/Scrivania/LLMs/gui_xrecs_presc_analytics/llmp" # "/home/padela/Desktop/LLMs_PM/llmp" #
     root_dir = Path(root_dir)
     
     output_filename = f"gemini_results_multiple_seeds_n{args.sample_size}{'_seq' if args.mode == 'seq' else ''}.json"
@@ -517,8 +518,11 @@ def main():
         dataset=args.dataset
     )
     
+    kpi_name = "lt" if args.kpi == "lead_time" else "op"
+    hash_name = "hash" if args.hashed else ""
+
     # Create log file for stdout and stderr
-    log_file = output_path / f"gemini_n{args.sample_size}{'_seq' if args.mode == 'seq' else ''}.log"
+    log_file = output_path / f"gemini_n{args.sample_size}{'_seq' if args.mode == 'seq' else ''}_{kpi_name}_{hash_name}.log"
     # assert not log_file.exists(), f"Log file already exists: {log_file}" #TODO: Uncomment this line to check if the log file already exists
     sys.stdout = sys.stderr = open(log_file, 'w')
     
@@ -527,7 +531,8 @@ def main():
     print(f"Using API key: {args.api_key_name}")
     model = GenAI(api_key, args.dataset, args.mode)
     
-    experiment = ExperimentManager(data_path, output_path, output_filename, model, n_seeds=5, kpi=args.kpi) #TODO: Cambia il numero di seeds
+    experiment = ExperimentManager(data_path, output_path, output_filename, model, 
+                                   n_seeds=4, hashed=args.hashed, kpi=args.kpi) #TODO: Cambia il numero di seeds
     experiment.run(sample_sizes=[args.sample_size])
     
     # Close the log file
