@@ -1,7 +1,9 @@
 import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.metrics import mean_absolute_error
-
+import pandas as pd
+import pm4py
+from pm4py.objects.log.importer.xes import importer as xes_importer
 
 def relative_mae_sklearn(y_true, y_pred):
     return mean_absolute_error(y_true, y_pred) / np.mean(y_true)
@@ -27,3 +29,52 @@ def relative_mae(y_true, y_pred):
     mae = np.mean(np.abs(y_true - y_pred))
     mean_true = np.mean(y_true)
     return mae / mean_true
+
+def returns_acts_freq(log_input, activity_name: str = 'concept:name', case_id_name: str = 'case:concept:name'):
+    """
+    Returns the frequency (as a percentage) of activities in the log, based on the number of cases (traces)
+    in which each activity appears at least once.
+
+    :param log_input: Path to the event log file (.xes, .csv, .parquet) or a pandas DataFrame.
+    :param activity_name: Column name for activities.
+    :param case_id_name: Column name for case IDs.
+    :return: Dictionary {activity_name: frequency_percentage}
+    """
+
+    # Load the log based on input type
+    if isinstance(log_input, str):
+        if log_input.endswith('.csv'):
+            try:
+                log = pd.read_csv(log_input, header=0, low_memory=False)
+            except UnicodeDecodeError:
+                log = pd.read_csv(log_input, header=0, encoding="cp1252", low_memory=False)
+        elif log_input.endswith('.xes'):
+            log = xes_importer.apply(log_input)
+            log = pm4py.convert_to_dataframe(log)
+        elif log_input.endswith('.parquet'):
+            log = pd.read_parquet(log_input, engine='pyarrow')
+        else:
+            raise ValueError("Unsupported file type. Please provide a .xes, .csv, or .parquet file.")
+    elif isinstance(log_input, pd.DataFrame):
+        log = log_input
+    else:
+        raise TypeError("Input must be a file path or a pandas DataFrame.")
+
+    # Compute frequency of each activity based on unique traces
+    activity_freq = log.groupby(activity_name)[case_id_name].nunique().to_dict()
+
+    # Convert to percentages
+    total_traces = log[case_id_name].nunique()
+    for activity in activity_freq:
+        activity_freq[activity] = (activity_freq[activity] / total_traces) * 100
+
+    # Sort by frequency descending
+    activity_freq = dict(sorted(activity_freq.items(), key=lambda item: item[1], reverse=True))
+
+    # Print the results
+    for activity, freq in activity_freq.items():
+        print(f"Activity: {activity}, Frequency: {freq:.2f}%")
+
+    return activity_freq
+
+returns_acts_freq("logs/bpi12w.xes")

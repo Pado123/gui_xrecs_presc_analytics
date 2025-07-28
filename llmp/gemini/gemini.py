@@ -205,7 +205,7 @@ class ExperimentManager:
             test = json_to_dataframe(data_path / f"preprocessed_log_{file_suffix}_test_{kpi}.json", test=True, kpi = kpi)
         
         train = train.sample(frac=1, random_state=train_seed).reset_index(drop=True).iloc[:n_samples]
-        test = test.sample(frac=1, random_state=test_seed).reset_index(drop=True).head(20) # TODO: Cambia in base al numero di test samples che vuoi
+        test = test.sample(frac=1, random_state=test_seed).reset_index(drop=True).head(26) # TODO: Cambia in base al numero di test samples che vuoi
         # print(f"test cose: {test.iloc[:,-1].values} e test shape {test.shape}")
         # print("ATTENTION ONLY 10 SAMPLES")
         # print(f"train quello che vuoi te: {train.iloc[:,-1].mean()}")
@@ -272,7 +272,7 @@ class ExperimentManager:
                             test_instance = test_data.iloc[idx, :-1]
                             y_true = test_data.iloc[idx, -1]
                             
-                            max_retries = 100 #TODO: Questo parametro si può cambiare
+                            max_retries = 99 #TODO: Questo parametro si può cambiare
                             retry_count = 0
                             while retry_count < max_retries:
                                 try:
@@ -320,6 +320,7 @@ class ExperimentManager:
                     
                     # Compute aggregated metrics for this test seed
                     test_results["aggregated_metrics"] = {
+                        "True_values": y_true_list,
                         "mean_MAE": np.mean(all_train_metrics["MAE"]),
                         "std_MAE": np.std(all_train_metrics["MAE"]),
                         "cv_MAE": (np.std(all_train_metrics["MAE"]) / np.mean(all_train_metrics["MAE"])) * 100,
@@ -393,6 +394,7 @@ class ExperimentManager:
                         
                         train_data, _ = self.load_data(self.data_path, n_samples, train_seed, test_seed, mode=self.mode, hashed=self.hashed, kpi=self.kpi)
                         print(f"train_data values:\n{train_data.iloc[:,-1].values}")
+                        print(f"test_data values:\n{test_data.iloc[:,-1].values}")
                         predictions_list = []
                         output_text_list = []
                         precision_list, recall_list, f1_list = [], [], []   
@@ -402,7 +404,7 @@ class ExperimentManager:
                             test_instance = test_data.iloc[idx, :-1]
                             y_true = test_data.iloc[idx, -1]
 
-                            max_retries = 5 #TODO: Questo parametro si può cambiare
+                            max_retries = 16 #TODO: Questo parametro si può cambiare
                             retry_count = 0
                             while retry_count < max_retries:
                                 try:
@@ -445,6 +447,7 @@ class ExperimentManager:
 
                     # Compute aggregated metrics for this test seed
                     test_results["aggregated_metrics"] = {
+                        "True_values": y_true_list,
                         "mean_Precision": np.mean(all_train_metrics["Precision"]),
                         "std_Precision": np.std(all_train_metrics["Precision"]),
                         "cv_Precision": (np.std(all_train_metrics["Precision"]) / np.mean(all_train_metrics["Precision"])) * 100,
@@ -532,7 +535,7 @@ def main():
     model = GenAI(api_key, args.dataset, args.mode)
     
     experiment = ExperimentManager(data_path, output_path, output_filename, model, 
-                                   n_seeds=4, hashed=args.hashed, kpi=args.kpi) #TODO: Cambia il numero di seeds
+                                   n_seeds=2, hashed=args.hashed, kpi=args.kpi) #TODO: Cambia il numero di seeds
     experiment.run(sample_sizes=[args.sample_size])
     
     # Close the log file
