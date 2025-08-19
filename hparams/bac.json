@@ -10,10 +10,15 @@
         "CLOSURE_REASON"
     ],
     "acts_not_freq": [
-        "Network Adjustment Requested",
-        "Pending Request for acquittance of heirs",
-        "Back-Office Adjustment Requested",
+        "Evaluating Request (NO registered letter)",
         "Evaluating Request (WITH registered letter)",
-        "Request deleted"
+        "Authorization Requested",
+        "Pending Liquidation Request",
+        "Service closure Request with BO responsibility",
+        "Pending Request for acquittance of heirs",
+        "Request deleted",        
+        "Service closure Request with network responsibility",
+        "Back-Office Adjustment Requested",        
+        "Network Adjustment Requested"
     ]
 }

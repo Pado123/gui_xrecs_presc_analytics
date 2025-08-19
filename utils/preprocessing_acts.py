@@ -103,7 +103,7 @@ def hash_log(log, activity_column_name='concept:name', kpi=None, trace_attr=None
                     break
 
     #return the log with hashed activities
-    return log
+    return log, hashing_dict_act
 
 
 def gen_attr_dict(df, trace_attr):

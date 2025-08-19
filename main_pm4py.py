@@ -3,11 +3,13 @@ import pandas as pd
 import pm4py 
 import json
 import os
-# curr_dir = '/home/padela/Scrivania/LLMs/gui_xrecs_presc_analytics'
-# os.chdir(curr_dir)
+import random
+curr_dir = '/home/padela/Desktop/LLMs_PM'
+os.chdir(curr_dir)
 
 # Set the exp_name and KPI
-exp_name = 'hospital'
+random.seed(1618)  # Set a random seed for reproducibility
+exp_name = 'bpi12'
 kpi = 'outcome_pred' #Can be either 'lead_time' or 'outcome_pred'
 print(f"Experiment name set to: {exp_name}, KPI is set to: {kpi}")
 
@@ -39,10 +41,7 @@ log, attr_trace_dict, hasing_dict = pr_act.encode_log(log_path, case_id_name=cas
                          activity_column_name=activity_column_name, 
                          encoding=cf_preprocessing, last_act_num=3, trace_attr=trace_attr)
 
-print(f" Save the hasing_dict to 'hparams/{exp_name}_hasing_dict.json'")
-with open(f'experiments/{exp_name}/hasing_dict.json', 'w') as f:
-    json.dump(hasing_dict, f)
-print("Hashing dictionary saved successfully.")
+# print(f" Save the hasing_dict to 'hparams/{exp_name}_hasing_dict.json'")
 
 print("Activity history features added.")
 
@@ -66,7 +65,8 @@ log = log_parsing.drop_0s(log)
 log = log_parsing.add_attr(log, attr_trace_dict, cf_preprocessing)
 
 if kpi == 'outcome_pred':
-    log = add_activity_outcome.add_activity_outcome(log, act_to_encode=hparams["acts_not_freq"][0])
+    log = add_activity_outcome.add_activity_outcome(log, act_to_encode=hparams["acts_not_freq"][0], 
+                                                    occurs_in_remaining=True)
     del log['lead_time']
     print("Activity outcome added.")
     
@@ -76,7 +76,7 @@ print("Log saved.")
 
 if hashed:
     print("Hashing the log...")
-    log = pr_act.hash_log(log, activity_column_name=activity_column_name, 
+    log, hashing_dict_act = pr_act.hash_log(log, activity_column_name=activity_column_name, 
                           kpi=kpi, trace_attr=trace_attr)
     print("Log hashed.")
 
@@ -92,9 +92,11 @@ IO.save_log(experiment_folder=experiment_folder, log=train,
             encoding_cf=cf_preprocessing, type='train', kpi=kpi, hashed=hashed)
 IO.save_log(experiment_folder=experiment_folder, log=test,
             encoding_cf=cf_preprocessing, type='test', kpi=kpi, hashed=hashed)
+if hashed:
+    with open(f'experiments/{exp_name}/hasing_dict.json', 'w') as f:
+        json.dump(hashing_dict_act, f)
 
+print("Hashing dictionary saved successfully.")
 print("Preprocessing Procedure completed.")
-
-
 
 # %%

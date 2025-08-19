@@ -2,9 +2,19 @@
     "log_path": "logs/bpi17_w.xes",
     "date_format": "%Y-%m-%dT%H:%M:%S",
     "cf_preprocessing": "sequential",
+    "hashed": true,
     "start_date": "start:timestamp",
     "end_date": "time:timestamp",
+    "trace_attr": [
+        "LoanGoal",
+        "ApplicationType",
+        "RequestedAmount"
+    ],
     "acts_not_freq": [
+        "W_Validate application",
+        "W_Shortened completion",
+        "W_Handle leads",
+        "W_Call incomplete files",
         "W_Assess potential fraud"
     ]
 }

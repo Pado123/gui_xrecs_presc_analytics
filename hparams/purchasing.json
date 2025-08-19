@@ -5,6 +5,6 @@
     "start_date": "start:timestamp",
     "end_date": "time:timestamp",
     "acts_not_freq": [
-        "Settle Dispute With Supplier"
+        "Amend Request for Quotation"
     ]
 }

@@ -1,5 +1,6 @@
 import pandas as pd
 import random
+random.seed(1618)  # Set a random seed for reproducibility
 
 def encode_trace_log(input_log: pd.DataFrame, trace_attributes: 
                      list, attr_trace_dict: dict, type: str, kpi:str) -> pd.DataFrame:
@@ -41,10 +42,11 @@ def encode_trace_log(input_log: pd.DataFrame, trace_attributes:
                 trace_info[attr] = group[attr].iloc[0]
 
         if type == 'test':
-            if type == 'lead_time':
+            if kpi == 'lead_time':
                 activity_time_seq.append(['Running'])
                 trace_info['ActTimeSeq'] = activity_time_seq
                 attr_trace_dict[trace_id] = trace_info
+
             elif kpi == 'outcome_pred':
                 attr_trace_dict[trace_id] = trace_info
                 trace_info['ActTimeSeq'] = activity_time_seq
@@ -54,11 +56,13 @@ def encode_trace_log(input_log: pd.DataFrame, trace_attributes:
                     out = 1
                 trace_info[str(list(group.columns)[-1])[4:]] = out
         
+
         elif type == 'train':
             if kpi == 'outcome_pred':
                 attr_trace_dict[trace_id] = trace_info
                 trace_info['ActTimeSeq'] = activity_time_seq
-                trace_info[str(list(group.columns)[-1])[4:]] = int(group[str(list(group.columns)[-1])].mean()>0)
+                # This means that if there is at least one activity in the trace that has a value of 1, then the outcome is 1
+                # trace_info[str(list(group.columns)[-1])[4:]] = int(group[str(list(group.columns)[-1])].mean()>0)
                 
 
             elif kpi == 'lead_time':
@@ -97,30 +101,55 @@ def add_daily_features(log, start_col='start:timestamp', end_col='time:timestamp
 
     return log
 
+# def get_running(df, case_col="case:concept:name"):
+#     """
+#     Trunca ogni traccia nel DataFrame sostituendola con un suo prefisso di lunghezza casuale tra 2 e len(trace)-1.
+
+#     :param df: DataFrame contenente le tracce.
+#     :param case_col: Nome della colonna che identifica i casi (default: "case_id").
+#     :return: DataFrame con tracce troncate.
+#     """
+#     truncated_df_list = []
+#     df[case_col] = df[case_col].astype(str)  # Assicurati che case_col sia di tipo stringa
+
+#     # Raggruppa per case_id e applica la troncatura
+#     for case_id, group in df.groupby(case_col):
+#         if len(group) > 3:
+#             new_length = random.randint(3, len(group)-1)
+#             truncated_group = group.iloc[:new_length]  # Prende solo il prefisso
+#         else:
+#             continue  # Se ha solo 1-2 eventi, skip it
+#         truncated_df_list.append(truncated_group)
+
+#     # Ricostruzione del DataFrame finale
+#     truncated_df = pd.concat(truncated_df_list).reset_index(drop=True)
+#     return truncated_df
+
 def get_running(df, case_col="case:concept:name"):
     """
-    Trunca ogni traccia nel DataFrame sostituendola con un suo prefisso di lunghezza casuale tra 2 e len(trace)-1.
-
-    :param df: DataFrame contenente le tracce.
-    :param case_col: Nome della colonna che identifica i casi (default: "case_id").
-    :return: DataFrame con tracce troncate.
+    Truncate each trace to a random prefix of length between 3 and len(trace)-1.
+    Traces of length <= 3 are discarded.
     """
-    truncated_df_list = []
+    df = df.copy()
+    df[case_col] = df[case_col].astype(str)
+    random.seed(1618) 
 
-    # Raggruppa per case_id e applica la troncatura
-    for case_id, group in df.groupby(case_col):
-        if len(group) > 2:
-            new_length = random.randint(2, len(group))
-            truncated_group = group.iloc[:new_length]  # Prende solo il prefisso
+    def truncate(group):
+        if len(group) > 4:
+            new_length = random.randint(4, len(group) - 1)
+            # print(f'the new length of the trace is {new_length}')
+            return group.iloc[:new_length]
         else:
-            truncated_group = group  # Se ha solo 1-2 eventi, la lasciamo invariata
+            return None  # drop short traces
 
-        truncated_df_list.append(truncated_group)
+    truncated_df = (
+        df.groupby(case_col, sort=False, group_keys=False)
+          .apply(truncate)
+          .dropna(how="all")
+          .reset_index(drop=True)
+    )
 
-    # Ricostruzione del DataFrame finale
-    truncated_df = pd.concat(truncated_df_list).reset_index(drop=True)
     return truncated_df
-
 
 def train_test_split(log, test_size=0.2, random_state=1618, temporal=True,
                      encoding=None, trace_attr=None, attr_trace_dict=None, kpi=None):

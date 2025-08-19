@@ -16,8 +16,8 @@ import utils.log_parsing as log_parsing
 
 kpi = 'outcome_pred' #Can be either 'lead_time' or 'outcome_pred'
 cb_loss = 'CrossEntropy' #  CrossEntropy' 
-case_studies = ['bpi12']
-samples = ['max']
+case_studies = ['hospital', 'bac', 'bpi12']
+samples = [100]
 
 
 def suppress_print():
@@ -122,6 +122,7 @@ for exp_name in case_studies:
 
                 elif kpi == 'outcome_pred':
                     act_to_encode = hparams["acts_not_freq"][0]
+                    print(f'The target activity is {act_to_encode}')
 
                     y_train = df_train[f'occ_{act_to_encode}']
                     y_test = df_test[f'occ_{act_to_encode}']
@@ -162,7 +163,9 @@ for exp_name in case_studies:
 
                 elif kpi == 'outcome_pred':
 
-                    precision, recall, f_score = precision_recall_fscore_support(y_test, y_pred, average=None)[:3]
+                    precision, recall, f_score = precision_recall_fscore_support(y_test, y_pred, average='weighted')[:3]
+                    print(f"Quello che ti serve ora è {f_score} - {precision} - {recall}")
+                    precision, recall, f_score = precision_recall_fscore_support(y_test, y_pred, average='weighted')[:3]
                     print(f"Quello che ti serve ora è {f_score} - {precision} - {recall}")
                     f_scores.append(f_score)
                     precisions.append(precision)

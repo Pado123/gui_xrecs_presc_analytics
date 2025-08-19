@@ -183,20 +183,27 @@ def json_to_dataframe(json_data, test=False, kpi="lead_time"):
     if kpi == "outcome_pred":
         rows = []
         for entry in json_data.values():
-        
-            # Parse the last number in the dictionary values
-            lead_time = entry.pop(str(list(entry.keys())[-1]), None)
             
-            # Optionally remove the last key from the entry for cleaner text
-            entry.pop(str(list(entry.keys())[-1]), None)            
+            if test:
+                # Parse the last number in the dictionary values
+                lead_time = entry.pop(str(list(entry.keys())[-1]), None)
+            
+
+                # Optionally remove the last key from the entry for cleaner text
+                entry.pop(str(list(entry.keys())[-1]), None)            
 
             # Convert the rest to string
             text = str(entry)
 
-            rows.append({
-                'text': text,
-                'trace outcome': lead_time
-            })
+            if test:
+                rows.append({
+                    'text': text,
+                    'trace outcome': lead_time
+                })
+            else:
+                rows.append({
+                    'text': text
+                })
         
         
     return pd.DataFrame(rows)
@@ -256,7 +263,7 @@ class PromptLoader:
         except Exception as e:
             raise ValueError(f"Error loading prompts for dataset {self.dataset}: {e}")
     
-    def get_prompts_for_mode(self, mode: str) -> tuple[str, str]:
+    def get_prompts_for_mode(self, mode: str, hashed: bool=False) -> tuple[str, str]:
         """
         Get system prompt and prompt template for the specified mode
         
@@ -269,10 +276,14 @@ class PromptLoader:
         Raises:
             ValueError: If mode is not found in prompts file
         """
+        
+        hashed = "_hashed" if hashed else ""
+        
         if not self.prompts or mode not in self.prompts:
             raise ValueError(f"No prompts found for mode '{mode}' in dataset '{self.dataset}'")
             
-        mode_prompts = self.prompts[mode]
+        mode_prompts = self.prompts[mode+hashed]
+        print('loaded prompts is:', mode_prompts)
         if 'system_prompt' not in mode_prompts or 'prompt_template' not in mode_prompts:
             raise ValueError(f"Invalid prompt format for mode '{mode}' in dataset '{self.dataset}'")
             

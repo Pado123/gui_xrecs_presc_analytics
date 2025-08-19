@@ -19,15 +19,16 @@ class PredictionError(Exception):
 
 class GenAI:
     """Base class for GenAI model interactions"""
-    def __init__(self, api_key: str, dataset: str, mode: str):
+    def __init__(self, api_key: str, dataset: str, mode: str, hashed: bool = False):
         self.dataset = dataset
         self.mode = mode
+        self.hashed = hashed
 
         # Load prompts for the dataset and mode
         prompt_loader = PromptLoader(dataset)
-        self.system_prompt, self.prompt_template = prompt_loader.get_prompts_for_mode(mode)
+        self.system_prompt, self.prompt_template = prompt_loader.get_prompts_for_mode(mode, hashed=hashed)
 
-        self.model_name = "gemini-2.0-flash" # "gemini-2.5-flash-preview-04-17" # 
+        self.model_name =  "gemini-2.5-flash-lite" # "gemini-2.0-flash-lite" #   "gemini-2.0-flash" #
         self.rate_limiter = RateLimiter(calls=1, per_seconds=12)
         
         genai.configure(api_key=api_key)
@@ -190,7 +191,7 @@ class ExperimentManager:
         # Determine file suffix based on mode
         file_suffix = "aggr_hist" if mode in {"agg", "agg_outcomepred"} else "sequential"
         hashed = "_hashed" if hashed else ""
-        print(f"Loading data for mode: {mode}, file_suffix: {file_suffix} and kpi: {kpi}")
+        print(f"Loading data for mode: {mode}, file_suffix: {file_suffix} and kpi: {kpi}, and hashed: {hashed}")
 
         if mode in {"agg", "agg_outcomepred"}:
             # Load data for aggregation mode
@@ -200,12 +201,14 @@ class ExperimentManager:
             train = pd.read_csv(data_path / f"preprocessed_log_{file_suffix}_train_{kpi}.csv").drop(columns=columns_to_drop)
             test = pd.read_csv(data_path / f"preprocessed_log_{file_suffix}_test_{kpi}.csv").drop(columns=columns_to_drop)
 
+        # preprocessed_log_sequential_{type}_{kpi}{hashed}
         elif mode in {"seq", "seq_outcomepred"}:
-            train = json_to_dataframe(data_path / f"preprocessed_log_{file_suffix}_train_{kpi}.json", kpi = kpi)
-            test = json_to_dataframe(data_path / f"preprocessed_log_{file_suffix}_test_{kpi}.json", test=True, kpi = kpi)
+            train = json_to_dataframe(data_path / f"preprocessed_log_sequential_train_{kpi}{hashed}.json", kpi = kpi)
+            test = json_to_dataframe(data_path / f"preprocessed_log_sequential_test_{kpi}{hashed}.json", test=True, kpi = kpi)
         
         train = train.sample(frac=1, random_state=train_seed).reset_index(drop=True).iloc[:n_samples]
-        test = test.sample(frac=1, random_state=test_seed).reset_index(drop=True).head(26) # TODO: Cambia in base al numero di test samples che vuoi
+        test = test.sample(frac=1, random_state=test_seed).reset_index(drop=True).head(50) # TODO: Cambia in base al numero di test samples che vuoi
+        print(f'the test log is {test.iloc[:5]}')
         # print(f"test cose: {test.iloc[:,-1].values} e test shape {test.shape}")
         # print("ATTENTION ONLY 10 SAMPLES")
         # print(f"train quello che vuoi te: {train.iloc[:,-1].mean()}")
@@ -421,7 +424,7 @@ class ExperimentManager:
 
                         print('y_test_trues', y_true_list)
                         print('y_test_preds', predictions_list)
-                        precision, recall, f1 = precision_recall_fscore_support([int(i) for i in y_true_list], [int(i) for i in predictions_list], average='weighted')[:3]
+                        precision, recall, f1 = precision_recall_fscore_support([int(i) for i in y_true_list], [int(i) for i in predictions_list], average='macro')[:3]
                         print(f"Precision: {precision}, Recall: {recall}, F1: {f1}")
 
                         # Store results for this train seed
@@ -495,7 +498,8 @@ class ExperimentManager:
         self.results["model_config"] = self.model.get_config()
         
         # Save results
-        output_file = self.output_path / self.output_filename
+        hashed = "_hashed" if self.model.hashed else ""
+        output_file = self.output_path / (self.output_filename[:-4] + hashed + ".json")
         with open(output_file, "w") as f:
             json.dump(self.results, f, indent=4)
         print(f"\nResults saved to: {output_file}")
@@ -510,7 +514,7 @@ def main():
     print(f"Running experiment with args: {args}")
     
     # Setup paths
-    root_dir = "/home/padela/Scrivania/LLMs/gui_xrecs_presc_analytics/llmp" # "/home/padela/Desktop/LLMs_PM/llmp" #
+    root_dir = "/home/padela/Desktop/LLMs_PM/llmp" # "/home/padela/Scrivania/LLMs/gui_xrecs_presc_analytics/llmp" # 
     root_dir = Path(root_dir)
     
     output_filename = f"gemini_results_multiple_seeds_n{args.sample_size}{'_seq' if args.mode == 'seq' else ''}.json"
@@ -532,10 +536,10 @@ def main():
     config = dotenv_values(Path(__file__).parent.parent / ".env")
     api_key = config[args.api_key_name]
     print(f"Using API key: {args.api_key_name}")
-    model = GenAI(api_key, args.dataset, args.mode)
+    model = GenAI(api_key, args.dataset, args.mode, hashed = args.hashed)
     
     experiment = ExperimentManager(data_path, output_path, output_filename, model, 
-                                   n_seeds=2, hashed=args.hashed, kpi=args.kpi) #TODO: Cambia il numero di seeds
+                                   n_seeds=1, hashed=args.hashed, kpi=args.kpi) #TODO: Cambia il numero di seeds
     experiment.run(sample_sizes=[args.sample_size])
     
     # Close the log file

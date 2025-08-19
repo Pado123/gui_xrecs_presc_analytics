@@ -4,6 +4,7 @@ import json
 # def hash_log(experiment_folder, log, encoding_cf, type=None, kpi=None):
 
 
+
 def save_log(experiment_folder, log, encoding_cf, type=None, kpi=None, hashed=False):
 
     hashed = '_hashed' if hashed else ''

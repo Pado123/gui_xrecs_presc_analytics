@@ -9,6 +9,11 @@
         "AMOUNT_REQ"
     ],
     "acts_not_freq": [
-        "W_Beoordelen fraude"
+        "W_Nabellen offertes",
+        "W_Valideren aanvraag",
+        "W_Nabellen incomplete dossiers",
+        "W_Afhandelen leads",
+        "W_Beoordelen fraude",
+        "W_Completeren aanvraag"        
     ]
 }
