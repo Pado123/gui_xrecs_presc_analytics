@@ -6,7 +6,16 @@ def add_activity_outcome(log, act_to_encode, occurs_in_remaining=True):
     # Group the log by trace identifier
     grouped = log.groupby('case:concept:name')
 
-    if not occurs_in_remaining:
+    if act_to_encode == 'RADIOLOGIA ESECUZIONE_outcome_composed': #TODO: Da qui
+        # If there is an activity in a trace, in which there is RADIOLOGIA ESECUZIONE, then set "occ" to 1 for all rows in that trace
+        # Iterate over each group (trace)
+        for trace_id, group in grouped:
+            # Check if the activity occurs in the trace
+            if act_to_encode in group['concept:name'].values:
+                # Set "occ" to 1 for all rows in the trace
+                log.loc[group.index, f'occ_{act_to_encode}'] = 1
+
+    elif not occurs_in_remaining:
     # Iterate over each group (trace)
         for trace_id, group in grouped:
             # Check if the activity occurs in the trace

@@ -6,3 +6,17 @@ git stash pop  		  # pop da stash, quindi riaggiorna tutto
 
 
 Se avessimo lavorato sullo stesso file sarebbe più spono
+
+
+
+
+
+
+
+
+
+git reset --hard
+git clean -fd
+git pull origin nome-branch
+
+Per fare tutto come sul primissimo commit e yoyo

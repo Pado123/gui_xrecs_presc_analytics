@@ -16,7 +16,7 @@ def save_log(experiment_folder, log, encoding_cf, type=None, kpi=None, hashed=Fa
 
     # If the output path is a CSV file, save the log as a CSV
     if '.csv' in output_path:
-        log = log.sort_values(by=['case:concept:name', 'time:timestamp'])
+        # log = log.sort_values(by=['case:concept:name', 'time:timestamp'])
         print(f"Saving preprocessed log to '{output_path}'")
         log.to_csv(path_or_buf=output_path, index=False)
         print("Preprocessed log saved as csv")

@@ -4,7 +4,7 @@ import pm4py
 import json
 import os
 import random
-curr_dir = '/home/padela/Desktop/LLMs_PM'
+curr_dir = "/home/padela/Scrivania/LLMs/gui_xrecs_presc_analytics" # '/home/padela/Desktop/LLMs_PM' #
 os.chdir(curr_dir)
 
 # Set the exp_name and KPI
@@ -99,4 +99,3 @@ if hashed:
 print("Hashing dictionary saved successfully.")
 print("Preprocessing Procedure completed.")
 
-# %%

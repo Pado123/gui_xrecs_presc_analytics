@@ -183,30 +183,24 @@ def json_to_dataframe(json_data, test=False, kpi="lead_time"):
     if kpi == "outcome_pred":
         rows = []
         for entry in json_data.values():
-            
+            entry_copy = entry.copy()  # don't mutate original
+
+            lead_time = None
             if test:
-                # Parse the last number in the dictionary values
-                lead_time = entry.pop(str(list(entry.keys())[-1]), None)
-            
+                # Last key holds the label (0/1)
+                last_key = list(entry_copy.keys())[-1]
+                lead_time = entry_copy[last_key]
+                entry_copy.pop(last_key, None)
 
-                # Optionally remove the last key from the entry for cleaner text
-                entry.pop(str(list(entry.keys())[-1]), None)            
+            # Convert to plain string (can later tokenize if needed)
+            text = str(entry_copy)
 
-            # Convert the rest to string
-            text = str(entry)
-
+            row = {"text": text}
             if test:
-                rows.append({
-                    'text': text,
-                    'trace outcome': lead_time
-                })
-            else:
-                rows.append({
-                    'text': text
-                })
-        
-        
-    return pd.DataFrame(rows)
+                row["trace outcome"] = lead_time
+            rows.append(row)
+
+        return pd.DataFrame(rows)
 
 def relative_mae(y_true, y_pred):
     """

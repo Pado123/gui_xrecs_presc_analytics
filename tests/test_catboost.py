@@ -1,6 +1,6 @@
 # %% Train catboost
 import os
-curr_dir = '/home/padela/Desktop/LLMs_PM'
+curr_dir = '/home/padela/Scrivania/LLMs/gui_xrecs_presc_analytics' # '/home/padela/Desktop/LLMs_PM'
 os.chdir(curr_dir)
 
 import catboost
@@ -11,14 +11,15 @@ import tqdm
 import sys
 from catboost import CatBoostRegressor, CatBoostClassifier, Pool
 import pm4py
+import random
 
 import utils.log_parsing as log_parsing
 
 kpi = 'outcome_pred' #Can be either 'lead_time' or 'outcome_pred'
 cb_loss = 'CrossEntropy' #  CrossEntropy' 
-case_studies = ['hospital', 'bac', 'bpi12']
+case_studies = ['hospital']
 samples = [100]
-
+random.seed(42)  # Set a random seed for reproducibility
 
 def suppress_print():
     
@@ -41,8 +42,8 @@ def fit_model(train_df, y, test_df, test_y):
             column_types = train_df.dtypes.astype(str).to_dict()
             
             params = {
-                'depth': 8,
-                'learning_rate': 0.00001,
+                'depth': 8,                
+                'learning_rate': 0.001,
                 'iterations': 2500,
                 'early_stopping_rounds': 100,
                 'thread_count': 4,
@@ -93,7 +94,7 @@ for exp_name in case_studies:
         if n_samples == 'max':
             n_simulations = 1
         else:
-            n_simulations = 10
+            n_simulations = 1 # 10
 
         for seed in tqdm.tqdm(range(n_simulations)):
             try:
@@ -135,7 +136,8 @@ for exp_name in case_studies:
 
                 model = fit_model(X_train, y_train, X_test, y_test)
                 y_pred = model.predict(X_test)
-
+                print(f'y_pred is {y_pred}')
+                print(f'y_true is {y_test}')
                 #Evaluate MAE using sklearn
                 from sklearn.metrics import mean_absolute_percentage_error, median_absolute_error, mean_absolute_error, f1_score, precision_recall_fscore_support
                 from utils.plot_stats import relative_mae
@@ -180,6 +182,8 @@ for exp_name in case_studies:
         # Print the mean value of y_pred
         print(f'Using {n_samples} samples for the log {exp_name} and {n_simulations} simulations')
         print('The mean of y_pred is ', round(np.mean(y_pred), 2))
+        print('the mean of y_test is ', round(np.mean(y_test), 2))
+        print(f'The mean of y_train is {round(np.mean(y_train), 2)}')
         # print(f' The median of y_pred is {round(np.median(y_pred), 2)}')
         # print(f' Test lenght is {len(df_test)}')
         # print(f' Train lenght is {len(df_train)}')
