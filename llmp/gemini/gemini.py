@@ -158,7 +158,7 @@ def setup_paths(data_root: Path, output_root: Path, dataset: str) -> tuple[Path,
 class ExperimentManager:
     """Manages experiment execution and results collection"""
     def __init__(self, data_path: Path, output_path: Path, output_filename: str, model: GenAI, kpi: str = "lead_time",
-                 base_seed: int = 42, n_seeds: int = 10, hashed: bool = False):
+                 base_seed: int = 1618, n_seeds: int = 10, hashed: bool = False):
         self.data_path = data_path
         self.output_path = output_path
         self.output_filename = output_filename
@@ -198,8 +198,8 @@ class ExperimentManager:
             columns_to_drop = ["time:timestamp", "case:concept:name", 
                             "day_of_week", "hour_of_day"]
             
-            train = pd.read_csv(data_path / f"preprocessed_log_{file_suffix}_train_{kpi}.csv").drop(columns=columns_to_drop)
-            test = pd.read_csv(data_path / f"preprocessed_log_{file_suffix}_test_{kpi}.csv").drop(columns=columns_to_drop)
+            train = pd.read_csv(data_path / f"preprocessed_log_{file_suffix}_train_{kpi}.csv").drop(columns=columns_to_drop, errors='ignore')
+            test = pd.read_csv(data_path / f"preprocessed_log_{file_suffix}_test_{kpi}.csv").drop(columns=columns_to_drop, errors='ignore')
 
         # preprocessed_log_sequential_{type}_{kpi}{hashed}
         elif mode in {"seq", "seq_outcomepred"}:
@@ -208,7 +208,7 @@ class ExperimentManager:
             print(f'train columns are {train.columns} and {train.head()}')
             print(f'test columns are {test.columns} and {test.head()}')
         train = train.sample(frac=1, random_state=train_seed).reset_index(drop=True).iloc[:n_samples]
-        test = test.sample(frac=1, random_state=test_seed).reset_index(drop=True).head(12) # TODO: Cambia in base al numero di test samples che vuoi
+        test = test.sample(frac=1, random_state=test_seed).reset_index(drop=True).head(80) # TODO: Cambia in base al numero di test samples che vuoi
         print(f'the test log is {test.iloc[:5]}')
         # print(f"test cose: {test.iloc[:,-1].values} e test shape {test.shape}")
         # print("ATTENTION ONLY 10 SAMPLES")
@@ -500,7 +500,7 @@ class ExperimentManager:
         
         # Save results
         hashed = "_hashed" if self.model.hashed else ""
-        output_file = self.output_path / (self.output_filename[:-4] + hashed + ".json")
+        output_file = self.output_path / (self.output_filename[:-5] + self.mode + hashed + ".json")
         with open(output_file, "w") as f:
             json.dump(self.results, f, indent=4)
         print(f"\nResults saved to: {output_file}")

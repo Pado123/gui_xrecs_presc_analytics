@@ -133,5 +133,5 @@ def returns_acts_freq(log_input, activity_name: str = 'concept:name', case_id_na
 
     return activity_freq
 
-returns_acts_freq("/home/padela/Desktop/LLMs_PM/logs/bpi17_w.xes")
+returns_acts_freq("logs/bpi12w.xes")
 # %%

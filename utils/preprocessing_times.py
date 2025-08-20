@@ -63,7 +63,7 @@ def encode_trace_log(input_log: pd.DataFrame, trace_attributes:
                     attr_trace_dict[trace_id] = trace_info
                     trace_info['ActTimeSeq'] = activity_time_seq
                     # This means that if there is at least one activity in the trace that has a value of 1, then the outcome is 1
-                    # trace_info[str(list(group.columns)[-1])[4:]] = int(group[str(list(group.columns)[-1])].mean()>0)
+                    trace_info[str(list(group.columns)[-1])[4:]] = int(group[str(list(group.columns)[-1])].mean()>0)
                     
 
                 elif kpi == 'lead_time':
@@ -75,9 +75,9 @@ def encode_trace_log(input_log: pd.DataFrame, trace_attributes:
 
     elif encoding == 'aggr_hist':
         # Remove everything but: trace attributes, case_id, activity, time_from_start and every column starting with '#' and last column
-        log_cols = ['case:concept:name', 'concept:name', 'time:timestamp', 'time_from_start'] + [col for col in input_log.columns if col.startswith('#')] + trace_attributes + [str(list(input_log.columns)[-1])]
-        # log_cols = ['case:concept:name', 'concept:name'] + [str(list(input_log.columns)[-1])]
-        input_log = input_log[log_cols]
+        # log_cols = ['case:concept:name', 'concept:name', 'time:timestamp', 'time_from_start'] + [col for col in input_log.columns if col.startswith('#')] + trace_attributes + [str(list(input_log.columns)[-1])]
+        # # log_cols = ['case:concept:name', 'concept:name'] + [str(list(input_log.columns)[-1])]
+        # input_log = input_log[log_cols]
         return input_log 
 
 

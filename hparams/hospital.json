@@ -1,8 +1,8 @@
 {
     "log_path": "logs/hospital.csv",
     "date_format": "%Y-%m-%dT%H:%M:%SZ",
-    "cf_preprocessing": "sequential",
-    "hashed": true,
+    "cf_preprocessing": "aggr_hist",
+    "hashed": false,
     "start_date": "start:timestamp",
     "end_date": "time:timestamp",
     "trace_attr": [
@@ -11,7 +11,8 @@
         "ACCESSO_TRIAGE"
     ],
     "acts_not_freq": [
-        "LABORATORIO",
+        "RADIOLOGIA ESECUZIONE",
+        "LABORATORIO",                
         "CONSULENZA: ALTRO",
         "CONSULENZA: Oculistica",
         "CONSULENZA: Ortopedia e traumatologia",

@@ -9,7 +9,7 @@ os.chdir(curr_dir)
 
 # Set the exp_name and KPI
 random.seed(1618)  # Set a random seed for reproducibility
-exp_name = 'bpi12'
+exp_name = 'hospital'
 kpi = 'outcome_pred' #Can be either 'lead_time' or 'outcome_pred'
 print(f"Experiment name set to: {exp_name}, KPI is set to: {kpi}")
 
@@ -64,9 +64,10 @@ if not os.path.exists(experiment_folder):
 log = log_parsing.drop_0s(log) 
 log = log_parsing.add_attr(log, attr_trace_dict, cf_preprocessing)
 
+
 if kpi == 'outcome_pred':
     log = add_activity_outcome.add_activity_outcome(log, act_to_encode=hparams["acts_not_freq"][0], 
-                                                    occurs_in_remaining=True)
+                                                    occurs_in_remaining=False)
     del log['lead_time']
     print("Activity outcome added.")
     
@@ -99,3 +100,5 @@ if hashed:
 print("Hashing dictionary saved successfully.")
 print("Preprocessing Procedure completed.")
 
+
+# %%

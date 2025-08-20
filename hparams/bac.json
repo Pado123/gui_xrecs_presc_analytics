@@ -1,7 +1,7 @@
 {
     "log_path": "logs/bac.xes",
     "date_format": "%Y-%m-%d %H:%M:%S%z",
-    "hashed": false, 
+    "hashed": true, 
     "cf_preprocessing": "sequential",
     "start_date": "start:timestamp",
     "end_date": "time:timestamp",
@@ -10,15 +10,15 @@
         "CLOSURE_REASON"
     ],
     "acts_not_freq": [
+        "Service closure Request with BO responsibility",
+        "Service closure Request with network responsibility",
         "Evaluating Request (NO registered letter)",
         "Evaluating Request (WITH registered letter)",
+        "Back-Office Adjustment Requested",      
         "Authorization Requested",
         "Pending Liquidation Request",
-        "Service closure Request with BO responsibility",
         "Pending Request for acquittance of heirs",
         "Request deleted",        
-        "Service closure Request with network responsibility",
-        "Back-Office Adjustment Requested",        
         "Network Adjustment Requested"
     ]
 }

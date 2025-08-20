@@ -2,17 +2,17 @@
     "log_path": "logs/bpi12w.xes",
     "date_format": "%Y-%m-%d %H:%M:%S%z",
     "hashed": false,
-    "cf_preprocessing": "sequential",
+    "cf_preprocessing": "aggr_hist",
     "start_date": "start:timestamp",
     "end_date": "time:timestamp",
     "trace_attr": [
         "AMOUNT_REQ"
     ],
     "acts_not_freq": [
-        "W_Nabellen offertes",
-        "W_Valideren aanvraag",
-        "W_Nabellen incomplete dossiers",
         "W_Afhandelen leads",
+        "W_Nabellen incomplete dossiers",
+        "W_Nabellen offertes",        
+        "W_Valideren aanvraag",        
         "W_Beoordelen fraude",
         "W_Completeren aanvraag"        
     ]

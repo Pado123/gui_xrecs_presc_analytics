@@ -18,7 +18,7 @@ import utils.log_parsing as log_parsing
 kpi = 'outcome_pred' #Can be either 'lead_time' or 'outcome_pred'
 cb_loss = 'CrossEntropy' #  CrossEntropy' 
 case_studies = ['hospital']
-samples = [100]
+samples = [10, 'max']
 random.seed(42)  # Set a random seed for reproducibility
 
 def suppress_print():
@@ -43,7 +43,7 @@ def fit_model(train_df, y, test_df, test_y):
             
             params = {
                 'depth': 8,                
-                'learning_rate': 0.001,
+                'learning_rate': 0.01,
                 'iterations': 2500,
                 'early_stopping_rounds': 100,
                 'thread_count': 4,
