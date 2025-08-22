@@ -2,8 +2,9 @@ import pandas as pd
 import random
 random.seed(1618)  # Set a random seed for reproducibility
 
-def encode_trace_log(input_log: pd.DataFrame, trace_attributes: 
-                     list, attr_trace_dict: dict, type: str, kpi:str, encoding:str) -> pd.DataFrame:
+def encode_trace_log(input_log: pd.DataFrame, trace_attributes: list, 
+                     attr_trace_dict: dict, type: str, kpi:str, 
+                     encoding:str, hash_trace_attr_names:dict=None) -> pd.DataFrame:
     """
     Encodes an event log into a format where each trace is represented by a single row.
     
@@ -19,6 +20,11 @@ def encode_trace_log(input_log: pd.DataFrame, trace_attributes:
         pd.DataFrame: A DataFrame where each row represents a single trace.
     """
     if encoding == 'sequential':
+
+        if hash_trace_attr_names:
+            # Replace the trace attributes names with their hashed values
+            trace_attributes = [hash_trace_attr_names[attr_name] for attr_name in trace_attributes if attr_name in hash_trace_attr_names]
+
         # Group events by trace
         grouped = input_log.groupby('case:concept:name')
         
@@ -169,7 +175,7 @@ def get_running(df, case_col="case:concept:name", encoding=None):
     return truncated_df
 
 def train_test_split(log, test_size=0.2, random_state=1618, temporal=True,
-                     encoding=None, trace_attr=None, attr_trace_dict=None, kpi=None):
+                     encoding=None, trace_attr=None, attr_trace_dict=None, kpi=None, hash_trace_attr_names=None):
 
     case_ids = log['case:concept:name'].unique()
 
@@ -192,8 +198,8 @@ def train_test_split(log, test_size=0.2, random_state=1618, temporal=True,
     print(f'last column mean of test is {test[str(list(test.columns)[-1])].mean()}')
     print(f'last column mean of train is {train[str(list(train.columns)[-1])].mean()}')
     print(f'last column names is {str(list(train.columns)[-1])}')
-    train = encode_trace_log(train, trace_attr, attr_trace_dict, type='train', kpi=kpi, encoding=encoding)
-    test = encode_trace_log(test, trace_attr, attr_trace_dict, type='test', kpi=kpi, encoding=encoding)
+    train = encode_trace_log(train, trace_attr, attr_trace_dict, type='train', kpi=kpi, encoding=encoding, hash_trace_attr_names=hash_trace_attr_names)
+    test = encode_trace_log(test, trace_attr, attr_trace_dict, type='test', kpi=kpi, encoding=encoding, hash_trace_attr_names=hash_trace_attr_names)
     if encoding == 'aggr_hist':
         # drop time:timestamp column
         train = train.drop(columns=['time:timestamp'])

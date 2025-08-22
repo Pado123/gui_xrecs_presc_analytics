@@ -4,7 +4,7 @@ import pm4py
 import json
 import os
 import random
-curr_dir = "/home/padela/Scrivania/LLMs/gui_xrecs_presc_analytics" # '/home/padela/Desktop/LLMs_PM' #
+curr_dir = "/home/padela/Desktop/LLMs_PM" # '/home/padela/Desktop/LLMs_PM' # /home/padela/Scrivania/LLMs/gui_xrecs_presc_analytics
 os.chdir(curr_dir)
 
 # Set the exp_name and KPI
@@ -37,12 +37,11 @@ end_date = hparams['end_date']
 parse_dates = [start_date, end_date]
 print(f"Log path: {log_path}, Date format: {date_format}, Parse dates: {parse_dates}")
 
-log, attr_trace_dict, hasing_dict = pr_act.encode_log(log_path, case_id_name=case_id_name, parse_dates=parse_dates,
-                         activity_column_name=activity_column_name, 
-                         encoding=cf_preprocessing, last_act_num=3, trace_attr=trace_attr)
+log, attr_trace_dict = pr_act.encode_log(log_path, case_id_name=case_id_name, parse_dates=parse_dates,
+                        activity_column_name=activity_column_name, 
+                        encoding=cf_preprocessing, last_act_num=3, trace_attr=trace_attr)
 
 # print(f" Save the hasing_dict to 'hparams/{exp_name}_hasing_dict.json'")
-
 print("Activity history features added.")
 
 log = pr_time.add_time_features(log)
@@ -71,13 +70,9 @@ if kpi == 'outcome_pred':
     del log['lead_time']
     print("Activity outcome added.")
     
-# IO.save_log(experiment_folder, log=log,
-#             encoding_cf=cf_preprocessing, type=None)
-print("Log saved.")
-
 if hashed:
     print("Hashing the log...")
-    log, hashing_dict_act = pr_act.hash_log(log, activity_column_name=activity_column_name, 
+    log, hashing_dict_act, hashing_dict_attr, hash_trace_attr_names = pr_act.hash_log(log, activity_column_name=activity_column_name, 
                           kpi=kpi, trace_attr=trace_attr)
     print("Log hashed.")
 
@@ -87,15 +82,19 @@ train, test = pr_time.train_test_split(log, test_size=0.2,
                                        encoding=cf_preprocessing,
                                        trace_attr=trace_attr,
                                        attr_trace_dict=attr_trace_dict,
-                                       kpi=kpi)
+                                       kpi=kpi, hash_trace_attr_names=hash_trace_attr_names if hashed else None)
 
 IO.save_log(experiment_folder=experiment_folder, log=train,
             encoding_cf=cf_preprocessing, type='train', kpi=kpi, hashed=hashed)
 IO.save_log(experiment_folder=experiment_folder, log=test,
             encoding_cf=cf_preprocessing, type='test', kpi=kpi, hashed=hashed)
+print("Train and test logs saved.")
+
 if hashed:
     with open(f'experiments/{exp_name}/hasing_dict.json', 'w') as f:
         json.dump(hashing_dict_act, f)
+    with open(f'experiments/{exp_name}/hash_trace_attr_names.json', 'w') as f:
+        json.dump(hash_trace_attr_names, f)
 
 print("Hashing dictionary saved successfully.")
 print("Preprocessing Procedure completed.")
