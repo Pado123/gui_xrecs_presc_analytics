@@ -158,6 +158,7 @@ def setup_paths(data_root: Path, output_root: Path, dataset: str) -> tuple[Path,
 class ExperimentManager:
     """Manages experiment execution and results collection"""
     def __init__(self, data_path: Path, output_path: Path, output_filename: str, model: GenAI, kpi: str = "lead_time",
+                 base_seed: int = 600, n_seeds: int = 10, hashed: bool = False):
                  base_seed: int = 1618, n_seeds: int = 10, hashed: bool = False):
         self.data_path = data_path
         self.output_path = output_path
@@ -198,8 +199,8 @@ class ExperimentManager:
             columns_to_drop = ["time:timestamp", "case:concept:name", 
                             "day_of_week", "hour_of_day"]
             
-            train = pd.read_csv(data_path / f"preprocessed_log_{file_suffix}_train_{kpi}.csv").drop(columns=columns_to_drop, errors='ignore')
-            test = pd.read_csv(data_path / f"preprocessed_log_{file_suffix}_test_{kpi}.csv").drop(columns=columns_to_drop, errors='ignore')
+            train = pd.read_csv(data_path / f"preprocessed_log_{file_suffix}_train_{kpi}.csv").drop(columns=columns_to_drop)
+            test = pd.read_csv(data_path / f"preprocessed_log_{file_suffix}_test_{kpi}.csv").drop(columns=columns_to_drop)
 
         # preprocessed_log_sequential_{type}_{kpi}{hashed}
         elif mode in {"seq", "seq_outcomepred"}:

@@ -94,7 +94,7 @@ for exp_name in case_studies:
         if n_samples == 'max':
             n_simulations = 1
         else:
-            n_simulations = 1 # 10
+            n_simulations = 12
 
         for seed in tqdm.tqdm(range(n_simulations)):
             try:
@@ -165,9 +165,9 @@ for exp_name in case_studies:
 
                 elif kpi == 'outcome_pred':
 
-                    precision, recall, f_score = precision_recall_fscore_support(y_test, y_pred, average='weighted')[:3]
+                    precision, recall, f_score = precision_recall_fscore_support(y_test, y_pred, average='macro')[:3]
                     print(f"Quello che ti serve ora è {f_score} - {precision} - {recall}")
-                    precision, recall, f_score = precision_recall_fscore_support(y_test, y_pred, average='weighted')[:3]
+                    precision, recall, f_score = precision_recall_fscore_support(y_test, y_pred, average='macro')[:3]
                     print(f"Quello che ti serve ora è {f_score} - {precision} - {recall}")
                     f_scores.append(f_score)
                     precisions.append(precision)
