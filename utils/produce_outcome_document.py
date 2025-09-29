@@ -2,28 +2,19 @@ import json
 import os
 from sklearn.metrics import f1_score
 import glob
-import ast
 
 def extract_clean_reasoning(raw_answer):
     try:
-        # Step 1: Extract the reasoning block
         reasoning_section = raw_answer.split('[[ ## reasoning ## ]]')[1]
         reasoning_only = reasoning_section.split('[[ ## answer ## ]]')[0]
-
-        # Step 2: Clean up escape characters and extra spaces
-        cleaned = reasoning_only.replace('\\n', ' ').replace('\\t', ' ')
-        # Step 2: Clean text
         cleaned = reasoning_only.replace('\\n', ' ') \
                                  .replace('\\t', ' ') \
                                  .replace('\n', ' ') \
-                                 .replace('\t', ' ') \
-                                 .replace("\\'", "'") \
-                                 .replace('\'', '"')        
-        cleaned = ' '.join(cleaned.split())  # Remove extra spaces
-
+                                 .replace('\t', ' ')
+        cleaned = ' '.join(cleaned.split())
         return cleaned
     except Exception:
-        return None  # Return None for malformed input
+        return None
 
 def extract_predictions_and_labels(data):
     results = []
@@ -37,18 +28,16 @@ def extract_predictions_and_labels(data):
                 # Extract the model's prediction from the text
                 try:
                     pred_text = output.split("[[ ## answer ## ]]")[1].split("[[ ## completed ## ]]")[0].strip()
-                    predicted = int(pred_text)
+                    predicted_from_text = int(pred_text)
                 except (IndexError, ValueError):
-                    predicted = None  # Handle malformed prediction
+                    predicted_from_text = None
 
                 # Get the actual label from the list
                 actual = test_content['aggregated_metrics']['True_values'][i]
 
                 results.append({
-                    # "test_seed": test_seed,
-                    # "train_seed": train_seed,
-                    # "index": i,
-                    "predicted_from_text": predictions[i],
+                    "predicted_from_logits": predictions[i],
+                    "predicted_from_text": predicted_from_text,
                     "actual_label": actual,
                     "text": extract_clean_reasoning(output.strip())
                 })
@@ -62,7 +51,6 @@ def read_and_process_case_studies(case_studies=['bac', 'hospital', 'bpi12']):
 
         print(f"Processing case study: {case_study}")
         base_folder = f'/home/padela/Scrivania/LLMs/gui_xrecs_presc_analytics/llmp/output/pm/{case_study}'
-        os.chdir(base_folder)
         json_files = glob.glob("*.json")
 
         # For it JSON file in the folder, read it, preprocess it and save the results
@@ -127,14 +115,32 @@ def evaluate_fscore(data):
     # Skip the first entry
     relevant_data = data[1:]
 
-    # Extract predictions and actual labels
-    y_pred = [int(round(item["predicted_from_text"])) for item in relevant_data]
-    y_true = [int(item["actual_label"]) for item in relevant_data]
+    # Extract predictions and actual labels, prefer text-derived when valid else logits
+    y_pred = []
+    y_true = []
+    for item in relevant_data:
+        actual = item.get("actual_label")
+        pred_text = item.get("predicted_from_text")
+        pred_logits = item.get("predicted_from_logits")
+        try:
+            if pred_text is not None:
+                pred_val = int(round(pred_text))
+            else:
+                pred_val = int(round(pred_logits))
+        except Exception:
+            # Skip items with invalid predictions
+            continue
+        try:
+            actual_val = int(actual)
+        except Exception:
+            continue
+        y_pred.append(pred_val)
+        y_true.append(actual_val)
 
     return f1_score(y_true, y_pred, average='weighted')
 
 
-def merge_json_files(folder_path, output_filename="merged_n100_hashed.json"):
+def merge_json_files(folder_path, case_study, output_filename="merged_n100_hashed.json"):
     """
     Merge all JSON files in a folder that contain both 'n100' and 'hashed' in their names,
     then save the merged content into a new JSON file.
@@ -158,7 +164,7 @@ def merge_json_files(folder_path, output_filename="merged_n100_hashed.json"):
     if not target_files:
         raise FileNotFoundError("No JSON files containing both 'n100' and 'hashed' were found.")
 
-    merged_data = concat_skip_first_multiple(target_files)
+    merged_data = concat_skip_first_multiple(os.path.dirname(folder_path), case_study, target_files)
 
     return merged_data
 
@@ -192,24 +198,26 @@ def produce_final_outcomes(directory='/home/padela/Scrivania/LLMs/gui_xrecs_pres
         #     print(f'\n') #TODO: aggiungi f-score e salva in a file
 
         options = {
-            "n100_hashed": n100_hashed,
-            "n10_hashed": n10_hashed,
+            # "n100_hashed": n100_hashed,
+            # "n10_hashed": n10_hashed,
             "n100": n100,
             "n10": n10
         }
 
         for name, value in options.items():
             merged_list = concat_skip_first_multiple(directory, case_study, value)
-            f1 = evaluate_fscore(merged_list)
-            merged_list[0]['f1_score'] = f1
-
-            print(f'The f-score for {case_study} - {name} is: {f1},len is {len(merged_list)}')
+            f1 = evaluate_fscore(merged_list) if len(merged_list) > 1 else None
+            if len(merged_list) > 0 and isinstance(merged_list[0], dict):
+                merged_list[0]['f1_score'] = f1
+            # Keep all entries; if needed, cap via slicing with a clear constant
+            print(f'The f-score for {case_study} - {name} is: {f1}, len is {len(merged_list)}')
 
             # Use the name in the filename
-            output_file = os.path.join(directory, case_study, f'merged_{name}.json')
+            output_file = os.path.join(directory, case_study, f'{name}.json')
             with open(output_file, 'w', encoding='utf-8') as f:
                 json.dump(merged_list, f, indent=4, ensure_ascii=False)
 
             print(f'Merged file saved to: {output_file}\n')
 
-produce_final_outcomes()
+if __name__ == "__main__":
+    produce_final_outcomes()

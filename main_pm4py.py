@@ -1,20 +1,20 @@
 # %% Import libraries
 import pandas as pd
-import pm4py 
 import json
 import os
 import random
-curr_dir = "/home/padela/Desktop/LLMs_PM" # '/home/padela/Desktop/LLMs_PM' # /home/padela/Scrivania/LLMs/gui_xrecs_presc_analytics
-os.chdir(curr_dir)
+
+# Resolve repository base directory from this file location to avoid chdir side effects
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # Set the exp_name and KPI
 random.seed(1618)  # Set a random seed for reproducibility
 exp_name = 'hospital'
-kpi = 'outcome_pred' #Can be either 'lead_time' or 'outcome_pred'
+kpi = 'lead_time' #Can be either 'lead_time' or 'outcome_pred'
 print(f"Experiment name set to: {exp_name}, KPI is set to: {kpi}")
 
 print(f"Loading hyperparameters from 'hparams/{exp_name}.json'")
-with open(f'hparams/{exp_name}.json') as f:
+with open(os.path.join(BASE_DIR, 'hparams', f'{exp_name}.json')) as f:
     hparams = json.load(f)
 print("Hyperparameters loaded successfully.")
 
@@ -54,7 +54,7 @@ log = log_parsing.reorder_cols(log)
 print("Columns reordered.")
 
 # Create the experiment folder if it doesn't exist
-experiment_folder = f'experiments/{exp_name}'
+experiment_folder = os.path.join(BASE_DIR, 'experiments', exp_name)
 if not os.path.exists(experiment_folder):
     print(f"Creating experiment folder at '{experiment_folder}'")
     os.makedirs(experiment_folder)
@@ -67,7 +67,7 @@ log = log_parsing.add_attr(log, attr_trace_dict, cf_preprocessing)
 if kpi == 'outcome_pred':
     log = add_activity_outcome.add_activity_outcome(log, act_to_encode=hparams["acts_not_freq"][0], 
                                                     occurs_in_remaining=False)
-    del log['lead_time']
+    log.pop('lead_time', None)
     print("Activity outcome added.")
     
 if hashed:
@@ -91,12 +91,12 @@ IO.save_log(experiment_folder=experiment_folder, log=test,
 print("Train and test logs saved.")
 
 if hashed:
-    with open(f'experiments/{exp_name}/hasing_dict.json', 'w') as f:
+    with open(os.path.join(experiment_folder, 'hashing_dict.json'), 'w') as f:
         json.dump(hashing_dict_act, f)
-    with open(f'experiments/{exp_name}/hash_trace_attr_names.json', 'w') as f:
+    with open(os.path.join(experiment_folder, 'hash_trace_attr_names.json'), 'w') as f:
         json.dump(hash_trace_attr_names, f)
 
-print("Hashing dictionary saved successfully.")
+    print("Hashing dictionary saved successfully.")
 print("Preprocessing Procedure completed.")
 
 

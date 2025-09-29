@@ -8,6 +8,7 @@
     "trace_attr": [
         "AMOUNT_REQ"
     ],
+    "pre": "analogical_att",
     "acts_not_freq": [
         "W_Afhandelen leads",
         "W_Nabellen incomplete dossiers",
