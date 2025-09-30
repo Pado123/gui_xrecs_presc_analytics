@@ -4,9 +4,6 @@ import sys
 curr_dir = '/home/padela/Scrivania/LLMs/gui_xrecs_presc_analytics' # '/home/padela/Desktop/LLMs_PM'
 os.chdir(curr_dir)
 
-
-from utils.knn_predictors import KNNPredictor
-
 import pandas as pd
 import numpy as np
 import json
@@ -15,74 +12,46 @@ import sys
 import pm4py
 import random
 from utils.select_columns import select_columns as sc
+from utils.path_predictor import filter_and_compute_mean
 
 kpi = 'lead_time' #Can be either 'lead_time' or 'outcome_pred'
 case_studies = ['bpi12']
-samples = ['max']
-random.seed(1618)  #
-cf_preprocessing = 'aggr_hist' # hz
-
-def fit_model(train_df, y, hparams):
-    """
-    Fit KNN model using the KNNPredictor class.
-    """
-    # Determine task type based on kpi
-    task_type = 'regression' if kpi == 'lead_time' else 'classification'
-
-    # Create KNN predictor
-    knn_predictor = KNNPredictor(task_type=task_type, random_state=42)
-
-    # Prepare training dataframe with target column
-    train_df_with_target = train_df.copy()
-    train_df_with_target['target'] = y
-    
-    # Get feature columns (all columns except target)
-    feature_columns = [col for col in train_df.columns]
-
-    # Train the model
-    results = knn_predictor.train(
-        df=train_df_with_target,
-        feature_columns=feature_columns,
-        target_column='target',
-        cv_folds=5,
-        k_values= [1] #[1, 3, 5, 7, 9, 11, 15, 19, 25]  # KNN specific parameters
-    )
-
-    return knn_predictor
-
+samples = [10]
+random.seed(1618)  
+cf_preprocessing = 'aggr_hist' 
 
 for exp_name in case_studies:
-    
+
     with open(f'hparams/{exp_name}.json') as f:
         hparams = json.load(f)
     df_test = pd.read_csv(f'experiments/{exp_name}/preprocessed_log_{cf_preprocessing}_test_{kpi}.csv')
-
-    # Select the columns plus the target column, that is the last one
-    selected_columns = sc(hparams, df_test) + [df_test.columns[-1]]
-    df_test = df_test[selected_columns]
 
     for n_samples in samples:
         print('\n'*2)
         print('Case study is', exp_name, 'with samples', n_samples)
         lmae = []
+        no_rows_counts = []
         f_scores, precisions, recalls = [], [], []
 
         if n_samples == 'max':
             n_simulations = 1
         else:
-            n_simulations = 200
+            n_simulations = 50
 
         for seed in tqdm.tqdm(range(n_simulations)):
-            try:                
-                df_train = pd.read_csv(f'experiments/{exp_name}/preprocessed_log_{cf_preprocessing}_train_{kpi}.csv')
-                df_train = df_train[selected_columns]
+            try:
                 rseed = int(1618 + seed)
                 try:    
+                    df_train = pd.read_csv(f'experiments/{exp_name}/preprocessed_log_{cf_preprocessing}_train_{kpi}.csv')
                     df_train = df_train.sample(frac=1, random_state=rseed).reset_index(drop=True).iloc[:n_samples] 
-                    
                 except: 
                     print('Sampling not done')
 
+                # Select the columns plus the target column, that is the last one
+                selected_columns = sc(hparams, df_train) + [df_train.columns[-1]]
+                df_train = df_train[selected_columns]
+                df_test = df_test[selected_columns]
+                
                 #Set the y
                 if kpi == 'lead_time':
 
@@ -106,10 +75,26 @@ for exp_name in case_studies:
                     X_train = X_train[X_test.columns]
                     X_test = X_test[X_train.columns]
 
-                model = fit_model(X_train, y_train, hparams)
-                y_pred = model.predict(X_test)
-                # print(f'y_pred is {y_pred}')
-                # print(f'y_true is {y_test}')
+                # For each row in X_test, provide a prediction using the filter_and_compute_mean function, store it in a y_pred list
+                y_pred = []
+                no_rows_count = 0
+                for _, row in tqdm.tqdm(X_test.iterrows()):
+                    # Create a row that includes the target column for the function
+                    if kpi == 'lead_time':
+                        # For lead_time, we need to add the target column back to the row
+                        row_with_target = row.copy()
+                        prediction, no_rows_flag = filter_and_compute_mean(df_train, row_with_target, mode='median')
+                        # print(f'The prediction is {prediction} and the no_rows_flag is {no_rows_flag}')
+                    elif kpi == 'outcome_pred':
+                        # For outcome_pred, we need to add the target column back to the row
+                        row_with_target = row.copy()
+                        # We'll use the mean of the training target as a placeholder since we don't have the actual target
+                        row_with_target[f'occ_{act_to_encode}'] = y_train.mean()
+                        prediction, no_rows_flag = filter_and_compute_mean(df_train, row_with_target)
+                    
+                    y_pred.append(prediction)
+                    no_rows_count += no_rows_flag
+                
                 #Evaluate MAE using sklearn
                 from sklearn.metrics import mean_absolute_percentage_error, median_absolute_error, mean_absolute_error, f1_score, precision_recall_fscore_support
                 from utils.plot_stats import relative_mae
@@ -131,6 +116,7 @@ for exp_name in case_studies:
                     cvae = np.std(errors)#/np.mean(y_test)
 
                     lmae.append(mae)
+                    print('The mean of y_pred is ', round(np.mean(y_pred), 2))
                     # lmape.append(mape)
                     # lrmae.append(rmae)
                     # lcvae.append(cvae)
@@ -145,6 +131,7 @@ for exp_name in case_studies:
                     precisions.append(precision)
                     recalls.append(recall)
 
+                no_rows_counts.append(no_rows_count)
             except:
                 print('Error in the simulation\'s sampling due to similarity')
 
@@ -153,26 +140,29 @@ for exp_name in case_studies:
 
         # Print the mean value of y_pred
         print(f'Using {n_samples} samples for the log {exp_name} and {n_simulations} simulations')
-        print('The mean of y_pred is ', round(np.mean(y_pred), 2), 'and the median is ', round(np.median(y_pred), 2))
-        print('the mean of y_test is ', round(np.mean(y_test), 2), 'and the median is ', round(np.median(y_test), 2))
-        print(f'The mean of y_train is {round(np.mean(y_train), 2)} and the median is {round(np.median(y_train), 2)}')
+        
+        print('the mean of y_test is ', round(np.mean(y_test), 2))
+        print(f'The mean of y_train is {round(np.mean(y_train), 2)}')
         # print(f' The median of y_pred is {round(np.median(y_pred), 2)}')
         # print(f' Test lenght is {len(df_test)}')
         # print(f' Train lenght is {len(df_train)}')
         # print(f' The log has {len(df_train["case:concept:name"].unique())} traces')
         # print('\n'*8)
 
+        y_mean = np.full(len(y_test), np.mean(y_test))
+        y_median = np.full(len(y_test), np.median(y_test))
+
         if kpi == 'lead_time':
             print('The mean mae for case study:', exp_name, 'with samples:', n_samples, 'is:', round(np.mean(lmae), 2))
             print('With std ', round(np.std(lmae), 2))
+            print('The number of rows that had no rows meet the criteria is ', np.mean(no_rows_counts), 'with std ', round(np.std(no_rows_counts), 2))
 
         if kpi == 'outcome_pred':
             print('For the case study ', exp_name, 'with samples ', n_samples, 'F1 is ', round(np.mean(f_scores), 2), '± ', round(np.std(f_scores), 2),
                 'Precision is ', round(np.mean(precisions), 2), '± ', round(np.std(precisions), 2),
                 'Recall is ', round(np.mean(recalls), 2), '± ', round(np.std(recalls), 2))
+            print('The number of rows that had no rows meet the criteria is ', np.mean(no_rows_counts), 'with std ', round(np.std(no_rows_counts), 2))
 
 print('train shape was ', X_train.shape)
 print('test shape was ', X_test.shape)
-del model
-print('model deleted')
 # %%

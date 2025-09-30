@@ -1,11 +1,13 @@
-# %% Train KNN
+# %% Train Linear Regression
 import os
 import sys
 curr_dir = '/home/padela/Scrivania/LLMs/gui_xrecs_presc_analytics' # '/home/padela/Desktop/LLMs_PM'
 os.chdir(curr_dir)
 
+# Add the current directory to Python path
+sys.path.append(curr_dir)
 
-from utils.knn_predictors import KNNPredictor
+from utils.linear_regression_predictor import LinearRegressionPredictor
 
 import pandas as pd
 import numpy as np
@@ -18,19 +20,19 @@ from utils.select_columns import select_columns as sc
 
 kpi = 'lead_time' #Can be either 'lead_time' or 'outcome_pred'
 case_studies = ['bpi12']
-samples = ['max']
+samples = [100]
 random.seed(1618)  #
 cf_preprocessing = 'aggr_hist' # hz
 
 def fit_model(train_df, y, hparams):
     """
-    Fit KNN model using the KNNPredictor class.
+    Fit Linear Regression model using the LinearRegressionPredictor class.
     """
     # Determine task type based on kpi
     task_type = 'regression' if kpi == 'lead_time' else 'classification'
 
-    # Create KNN predictor
-    knn_predictor = KNNPredictor(task_type=task_type, random_state=42)
+    # Create Linear Regression predictor
+    lr_predictor = LinearRegressionPredictor(task_type=task_type, random_state=42)
 
     # Prepare training dataframe with target column
     train_df_with_target = train_df.copy()
@@ -40,15 +42,14 @@ def fit_model(train_df, y, hparams):
     feature_columns = [col for col in train_df.columns]
 
     # Train the model
-    results = knn_predictor.train(
+    results = lr_predictor.train(
         df=train_df_with_target,
         feature_columns=feature_columns,
         target_column='target',
-        cv_folds=5,
-        k_values= [1] #[1, 3, 5, 7, 9, 11, 15, 19, 25]  # KNN specific parameters
+        cv_folds=5
     )
 
-    return knn_predictor
+    return lr_predictor
 
 
 for exp_name in case_studies:
@@ -64,8 +65,13 @@ for exp_name in case_studies:
     for n_samples in samples:
         print('\n'*2)
         print('Case study is', exp_name, 'with samples', n_samples)
-        lmae = []
+        lmae, lmae_mean_baseline, lmae_median_baseline = [], [], []
         f_scores, precisions, recalls = [], [], []
+        
+        # Initialize variables to avoid NameError
+        y_pred = []
+        y_test = []
+        y_train = []
 
         if n_samples == 'max':
             n_simulations = 1
@@ -78,7 +84,8 @@ for exp_name in case_studies:
                 df_train = df_train[selected_columns]
                 rseed = int(1618 + seed)
                 try:    
-                    df_train = df_train.sample(frac=1, random_state=rseed).reset_index(drop=True).iloc[:n_samples] 
+                    if n_samples != 'max':
+                        df_train = df_train.sample(frac=1, random_state=rseed).reset_index(drop=True).iloc[:n_samples] 
                     
                 except: 
                     print('Sampling not done')
@@ -108,6 +115,11 @@ for exp_name in case_studies:
 
                 model = fit_model(X_train, y_train, hparams)
                 y_pred = model.predict(X_test)
+                
+                # Create baseline predictions using mean and median of training set
+                y_pred_mean_baseline = np.full(len(y_test), y_train.mean())
+                y_pred_median_baseline = np.full(len(y_test), y_train.median())
+                
                 # print(f'y_pred is {y_pred}')
                 # print(f'y_true is {y_test}')
                 #Evaluate MAE using sklearn
@@ -120,8 +132,13 @@ for exp_name in case_studies:
                     # mape = mean_absolute_percentage_error(y_test, y_pred)
                     # print('The MAPE is ', round(mse, 2)) 
 
+                    # Linear Regression MAE
                     mae = mean_absolute_error(y_test, y_pred)
                     # print('The MAE is ', round(mae, 2))
+
+                    # Baseline MAEs
+                    mae_mean_baseline = mean_absolute_error(y_test, y_pred_mean_baseline)
+                    mae_median_baseline = mean_absolute_error(y_test, y_pred_median_baseline)
 
                     #Same with median 
                     # rmae = relative_mae(y_test, y_pred)
@@ -131,9 +148,13 @@ for exp_name in case_studies:
                     cvae = np.std(errors)#/np.mean(y_test)
 
                     lmae.append(mae)
+                    lmae_mean_baseline.append(mae_mean_baseline)
+                    lmae_median_baseline.append(mae_median_baseline)
                     # lmape.append(mape)
                     # lrmae.append(rmae)
                     # lcvae.append(cvae)
+
+                    
 
                 elif kpi == 'outcome_pred':
 
@@ -153,26 +174,41 @@ for exp_name in case_studies:
 
         # Print the mean value of y_pred
         print(f'Using {n_samples} samples for the log {exp_name} and {n_simulations} simulations')
-        print('The mean of y_pred is ', round(np.mean(y_pred), 2), 'and the median is ', round(np.median(y_pred), 2))
-        print('the mean of y_test is ', round(np.mean(y_test), 2), 'and the median is ', round(np.median(y_test), 2))
-        print(f'The mean of y_train is {round(np.mean(y_train), 2)} and the median is {round(np.median(y_train), 2)}')
+        if len(y_pred) > 0:
+            print('The mean of y_pred is ', round(np.mean(y_pred), 2), 'and the median is ', round(np.median(y_pred), 2))
+            print('the mean of y_test is ', round(np.mean(y_test), 2), 'and the median is ', round(np.median(y_test), 2))
+            print(f'The mean of y_train is {round(np.mean(y_train), 2)} and the median is {round(np.median(y_train), 2)}')
+        else:
+            print('No successful simulations completed')
         # print(f' The median of y_pred is {round(np.median(y_pred), 2)}')
         # print(f' Test lenght is {len(df_test)}')
         # print(f' Train lenght is {len(df_train)}')
         # print(f' The log has {len(df_train["case:concept:name"].unique())} traces')
         # print('\n'*8)
 
-        if kpi == 'lead_time':
+        if kpi == 'lead_time' and len(lmae) > 0:
             print('The mean mae for case study:', exp_name, 'with samples:', n_samples, 'is:', round(np.mean(lmae), 2))
             print('With std ', round(np.std(lmae), 2))
+            
+            # Report baseline MAEs
+            print('Baseline MAE (using mean of train set):', round(np.mean(lmae_mean_baseline), 2), '±', round(np.std(lmae_mean_baseline), 2))
+            print('Baseline MAE (using median of train set):', round(np.mean(lmae_median_baseline), 2), '±', round(np.std(lmae_median_baseline), 2))
+            
+            # Calculate average of both baselines
+            avg_baseline_mae = (np.mean(lmae_mean_baseline) + np.mean(lmae_median_baseline)) / 2
+            print('Average baseline MAE (mean + median):', round(avg_baseline_mae, 2))
 
-        if kpi == 'outcome_pred':
+        if kpi == 'outcome_pred' and len(f_scores) > 0:
             print('For the case study ', exp_name, 'with samples ', n_samples, 'F1 is ', round(np.mean(f_scores), 2), '± ', round(np.std(f_scores), 2),
                 'Precision is ', round(np.mean(precisions), 2), '± ', round(np.std(precisions), 2),
                 'Recall is ', round(np.mean(recalls), 2), '± ', round(np.std(recalls), 2))
 
-print('train shape was ', X_train.shape)
-print('test shape was ', X_test.shape)
-del model
-print('model deleted')
+# Print shapes if variables are defined
+try:
+    print('train shape was ', X_train.shape)
+    print('test shape was ', X_test.shape)
+    del model
+    print('model deleted')
+except NameError:
+    print('Variables not defined due to simulation errors')
 # %%

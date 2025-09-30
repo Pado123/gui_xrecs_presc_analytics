@@ -78,3 +78,71 @@ def returns_acts_freq(log_input, activity_name: str = 'concept:name', case_id_na
     return activity_freq
 
 # returns_acts_freq("logs/bpi12w.xes")
+
+# %%
+
+def plot_last_column_histogram(file_path, bins=50, title=None, figsize=(10, 6)):
+    """
+    Plot histogram distribution of the last column in a dataset.
+    
+    :param file_path: Path to the dataset file (.csv, .xes, .parquet)
+    :param bins: Number of bins for the histogram (default: 50)
+    :param title: Custom title for the plot (optional)
+    :param figsize: Figure size as tuple (width, height)
+    :return: None (displays the plot)
+    """
+    
+    # Load the dataset based on file extension
+    if file_path.endswith('.csv'):
+        try:
+            data = pd.read_csv(file_path, header=0, low_memory=False)
+        except UnicodeDecodeError:
+            data = pd.read_csv(file_path, header=0, encoding="cp1252", low_memory=False)
+    elif file_path.endswith('.xes'):
+        log = xes_importer.apply(file_path)
+        data = pm4py.convert_to_dataframe(log)
+    elif file_path.endswith('.parquet'):
+        data = pd.read_parquet(file_path, engine='pyarrow')
+    else:
+        raise ValueError("Unsupported file type. Please provide a .xes, .csv, or .parquet file.")
+    
+    # Get the last column
+    last_column = data.iloc[:, -1]
+    column_name = data.columns[-1]
+    
+    # Create the histogram plot
+    plt.figure(figsize=figsize)
+    plt.hist(last_column.dropna(), bins=bins, alpha=0.7, edgecolor='black')
+    
+    # Set labels and title
+    plt.xlabel(column_name)
+    plt.ylabel('Frequency')
+    
+    if title:
+        plt.title(title)
+    else:
+        plt.title(f'Histogram Distribution of {column_name}')
+    
+    # Add some statistics to the plot
+    mean_val = last_column.mean()
+    median_val = last_column.median()
+    plt.axvline(mean_val, color='red', linestyle='--', label=f'Mean: {mean_val:.2f}')
+    plt.axvline(median_val, color='green', linestyle='--', label=f'Median: {median_val:.2f}')
+    
+    plt.legend()
+    plt.grid(True, alpha=0.3)
+    plt.tight_layout()
+    plt.show()
+    
+    # Print some basic statistics
+    print(f"Statistics for column '{column_name}':")
+    print(f"Count: {last_column.count()}")
+    print(f"Mean: {mean_val:.4f}")
+    print(f"Median: {median_val:.4f}")
+    print(f"Std Dev: {last_column.std():.4f}")
+    print(f"Min: {last_column.min():.4f}")
+    print(f"Max: {last_column.max():.4f}")
+
+# plot_last_column_histogram('/home/padela/Scrivania/LLMs/gui_xrecs_presc_analytics/experiments/bpi12/preprocessed_log_aggr_hist_train_lead_time.csv')
+# plot_last_column_histogram('/home/padela/Scrivania/LLMs/gui_xrecs_presc_analytics/experiments/bpi12/preprocessed_log_aggr_hist_test_lead_time.csv')
+# %%

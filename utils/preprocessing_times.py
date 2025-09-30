@@ -108,6 +108,27 @@ def add_time_features(log, start_col='start:timestamp', end_col='time:timestamp'
 
     return log
 
+def add_remaining_time_features(log, start_col='start:timestamp', end_col='time:timestamp', date_format='%Y-%m-%d %H:%M:%S%z'):
+    
+    # If the start and end columns are not in datetime format, convert them
+    if not pd.api.types.is_datetime64_any_dtype(log[start_col]):
+        log[start_col] = pd.to_datetime(log[start_col], format='mixed', utc=True)
+    if not pd.api.types.is_datetime64_any_dtype(log[end_col]):
+        log[end_col] = pd.to_datetime(log[end_col], format='mixed', utc=True)
+
+    # Cast the time columns to unix 
+    log['activity_duration'] = (log[end_col] - log[start_col])
+    log['activity_duration'] = (log['activity_duration'].dt.total_seconds() / 60).round(0).astype(int)
+
+    # For each activity in each trace, evaluate the time from the start of the trace
+    log['time_from_start'] = ((log[end_col] - log.groupby('case:concept:name')[start_col].transform('first')).dt.total_seconds() / 60).round(0).astype(int)
+    
+    #Group by trace and calculate the remaining time of the trace, put it in a column called "remaining_time" that is the difference between the last time:timestamp and the current time:timestamp
+    log['remaining_time'] = log.groupby('case:concept:name')[end_col].transform('last') - log[end_col]
+    log['remaining_time'] = (log['remaining_time'].dt.total_seconds() / 60).round(0).astype(int)
+
+    return log
+
 def add_daily_features(log, start_col='start:timestamp', end_col='time:timestamp'):
 
     # Extract the day of the week and the hour of the day from the start:timestamp

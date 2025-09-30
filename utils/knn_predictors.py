@@ -597,5 +597,5 @@ class KNNPredictor:
 #     print(f"Evaluation metrics: {metrics_reg}")
 
 
-if __name__ == "__main__":
-    example_usage()
+# if __name__ == "__main__":
+#     example_usage()

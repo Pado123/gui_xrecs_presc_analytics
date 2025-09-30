@@ -12,5 +12,9 @@ def select_columns(hparams, df):
         # Return the columns in the hparams['trace_attr'] list
         return hparams['trace_attr']
 
+    elif hparams['pre'] == 'path_pred':
+        return [col for col in df.columns if col.startswith('#')]
+
     elif hparams['pre'] == 'similarity_times':
-        raise ValueError('Not implemented yet')
+        return ['activity_duration', 'time_from_start']
+    

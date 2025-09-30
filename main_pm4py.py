@@ -9,7 +9,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # Set the exp_name and KPI
 random.seed(1618)  # Set a random seed for reproducibility
-exp_name = 'hospital'
+exp_name = 'bpi12'
 kpi = 'lead_time' #Can be either 'lead_time' or 'outcome_pred'
 print(f"Experiment name set to: {exp_name}, KPI is set to: {kpi}")
 
@@ -44,8 +44,16 @@ log, attr_trace_dict = pr_act.encode_log(log_path, case_id_name=case_id_name, pa
 # print(f" Save the hasing_dict to 'hparams/{exp_name}_hasing_dict.json'")
 print("Activity history features added.")
 
-log = pr_time.add_time_features(log)
-print("Time-based features added.")
+if not hparams['rem_time']:
+    log = pr_time.add_time_features(log)
+    print("Time-based features added.")
+
+else:
+    log = pr_time.add_remaining_time_features(log)
+    # Rename the column "remaining_time" to "lead_time"
+    log = log.rename(columns={'remaining_time': 'lead_time'})
+    print("Remaining time features added.")
+    print(log['lead_time'].mean(), 'AAAAAAAAAAAAAAAAAAAA')
 
 log = pr_time.add_daily_features(log)
 print("Daily features added.")
