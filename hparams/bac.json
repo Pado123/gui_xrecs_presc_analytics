@@ -2,13 +2,14 @@
     "log_path": "logs/bac.xes",
     "date_format": "%Y-%m-%d %H:%M:%S%z",
     "hashed": false, 
-    "cf_preprocessing": "sequential",
+    "cf_preprocessing": "aggr_hist",
     "start_date": "start:timestamp",
     "end_date": "time:timestamp",
     "trace_attr": [
         "CLOSURE_TYPE",
         "CLOSURE_REASON"
     ],
+    "pre": "path_pred",
     "acts_not_freq": [
         "Service closure Request with BO responsibility",
         "Service closure Request with network responsibility",

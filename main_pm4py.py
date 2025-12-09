@@ -4,8 +4,8 @@ import json
 import os
 import random
 
-# Resolve repository base directory from this file location to avoid chdir side effects
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+os.chdir('/home/padela/Desktop/LLMs_PM')
 
 # Set the exp_name and KPI
 random.seed(1618)  # Set a random seed for reproducibility
@@ -14,8 +14,12 @@ kpi = 'lead_time' #Can be either 'lead_time' or 'outcome_pred'
 print(f"Experiment name set to: {exp_name}, KPI is set to: {kpi}")
 
 print(f"Loading hyperparameters from 'hparams/{exp_name}.json'")
-with open(os.path.join(BASE_DIR, 'hparams', f'{exp_name}.json')) as f:
+
+# Load the hyperparameters
+with open(f'hparams/{exp_name}.json') as f:
     hparams = json.load(f)
+
+
 print("Hyperparameters loaded successfully.")
 
 from utils import add_activity_outcome
@@ -44,16 +48,12 @@ log, attr_trace_dict = pr_act.encode_log(log_path, case_id_name=case_id_name, pa
 # print(f" Save the hasing_dict to 'hparams/{exp_name}_hasing_dict.json'")
 print("Activity history features added.")
 
-if not hparams['rem_time']:
-    log = pr_time.add_time_features(log)
-    print("Time-based features added.")
 
-else:
-    log = pr_time.add_remaining_time_features(log)
-    # Rename the column "remaining_time" to "lead_time"
-    log = log.rename(columns={'remaining_time': 'lead_time'})
-    print("Remaining time features added.")
-    print(log['lead_time'].mean(), 'AAAAAAAAAAAAAAAAAAAA')
+log = pr_time.add_remaining_time_features(log)
+# Rename the column "remaining_time" to "lead_time"
+log = log.rename(columns={'remaining_time': 'lead_time'})
+print("Remaining time features added.")
+print(log['lead_time'].mean(), 'AAAAAAAAAAAAAAAAAAAA')
 
 log = pr_time.add_daily_features(log)
 print("Daily features added.")
@@ -61,12 +61,6 @@ print("Daily features added.")
 log = log_parsing.reorder_cols(log)
 print("Columns reordered.")
 
-# Create the experiment folder if it doesn't exist
-experiment_folder = os.path.join(BASE_DIR, 'experiments', exp_name)
-if not os.path.exists(experiment_folder):
-    print(f"Creating experiment folder at '{experiment_folder}'")
-    os.makedirs(experiment_folder)
-    print("Experiment folder created.")
 
 log = log_parsing.drop_0s(log) 
 log = log_parsing.add_attr(log, attr_trace_dict, cf_preprocessing)
@@ -92,6 +86,7 @@ train, test = pr_time.train_test_split(log, test_size=0.2,
                                        attr_trace_dict=attr_trace_dict,
                                        kpi=kpi, hash_trace_attr_names=hash_trace_attr_names if hashed else None)
 
+experiment_folder = f'experiments/{exp_name}'
 IO.save_log(experiment_folder=experiment_folder, log=train,
             encoding_cf=cf_preprocessing, type='train', kpi=kpi, hashed=hashed)
 IO.save_log(experiment_folder=experiment_folder, log=test,

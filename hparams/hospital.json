@@ -10,6 +10,7 @@
         "ETA_ACCESSO",
         "ACCESSO_TRIAGE"
     ],
+    "pre": "path_pred",
     "acts_not_freq": [
         "RADIOLOGIA ESECUZIONE",
         "LABORATORIO",                

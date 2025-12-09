@@ -1,8 +1,8 @@
 def select_columns(hparams, df):
 
-    if hparams['pre'] == None: 
+    if hparams['pre'] == "all": 
         print('No hparams column selected, returning all the columns')
-        return None
+        return list(df.columns)
     
     elif hparams['pre'] == 'analogical_cf':
         # Return the 'concept:name' column and the ones that start with '#'
