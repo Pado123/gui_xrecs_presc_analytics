@@ -5,12 +5,12 @@ import os
 import random
 
 
-os.chdir('/home/padela/Desktop/LLMs_PM')
+os.chdir('/home/padela/Scrivania/LLMs/gui_xrecs_presc_analytics')
 
 # Set the exp_name and KPI
 random.seed(1618)  # Set a random seed for reproducibility
-exp_name = 'bpi12'
-kpi = 'lead_time' #Can be either 'lead_time' or 'outcome_pred'
+exp_name = 'hospital'
+kpi = 'outcome_pred' #Can be either 'lead_time' or 'outcome_pred'
 print(f"Experiment name set to: {exp_name}, KPI is set to: {kpi}")
 
 print(f"Loading hyperparameters from 'hparams/{exp_name}.json'")
@@ -69,7 +69,7 @@ log = log_parsing.add_attr(log, attr_trace_dict, cf_preprocessing)
 if kpi == 'outcome_pred':
     log = add_activity_outcome.add_activity_outcome(log, act_to_encode=hparams["acts_not_freq"][0], 
                                                     occurs_in_remaining=False)
-    log.pop('lead_time', None)
+    del log['lead_time']
     print("Activity outcome added.")
     
 if hashed:

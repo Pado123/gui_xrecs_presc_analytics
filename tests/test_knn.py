@@ -1,7 +1,7 @@
 # %% Train KNN
 import os
 import sys
-curr_dir = '/home/padela/Desktop/LLMs_PM' # '/home/padela/Scrivania/LLMs/gui_xrecs_presc_analytics' # '/home/padela/Desktop/LLMs_PM'
+curr_dir = '/home/padela/Scrivania/LLMs/gui_xrecs_presc_analytics' #  '/home/padela/Desktop/LLMs_PM'
 os.chdir(curr_dir)
 
 # Add the current directory to Python path
@@ -22,9 +22,9 @@ from utils.select_columns import select_columns as sc
 import warnings
 warnings.filterwarnings('ignore')
 
-kpi = 'lead_time' #Can be either 'lead_time' or 'outcome_pred'
-case_studies = ['bac', 'hospital']
-samples = ['max']
+kpi = 'outcome_pred' #Can be either 'lead_time' or 'outcome_pred'
+case_studies = ['bpi12']#, 'hospital', 'bac']
+samples = [100]
 random.seed(1618)  #
 cf_preprocessing = 'aggr_hist' # hz
 
@@ -57,14 +57,21 @@ def fit_model(train_df, y, hparams):
     for col in train_df_with_target[feature_columns].select_dtypes(include=['object']).columns:
         train_df_with_target[col] = train_df_with_target[col].astype(str)
 
-    # Train the model
+    # Train the [1model
+    k_values = [1, 4, 8, 12, 18, 25, 50, 100]  # KNN specific parameters [ 1]#,
+    print(f"\nTesting KNN with k values: {k_values}")
+    print("=" * 50)
     results = knn_predictor.train(
         df=train_df_with_target,
         feature_columns=feature_columns,
         target_column='target',
         cv_folds=5,
-        k_values= [1, 3, 5, 7, 9, 11, 15, 19, 25]  # KNN specific parameters [1]
+        k_values=k_values,
+        verbose=1  # Show progress for each k value
     )
+    print(f"Best k value selected: {results['best_params']['n_neighbors']}")
+    print(f"Best CV score: {results['best_cv_score']:.4f} ± {results['best_cv_std']:.4f}")
+    print("=" * 50)
     
     # # Log detected column types (optional, for debugging)
     # if hasattr(knn_predictor, 'detected_categorical_columns') and knn_predictor.detected_categorical_columns:
@@ -108,8 +115,15 @@ for exp_name in case_studies:
         lmae = []
         f_scores, precisions, recalls = [], [], []
 
-        if n_samples == 'max':
+
+        if n_samples == 'max' and exp_name in ['hospital', 'bac']:
+            
+            n_samples = 10000
             n_simulations = 1
+        
+        elif n_samples == 'max':
+            n_simulations = 1
+                
         else:
             n_simulations = 40
 
@@ -147,7 +161,7 @@ for exp_name in case_studies:
 
             elif kpi == 'outcome_pred':
                 act_to_encode = hparams["acts_not_freq"][0]
-                print(f'The target activity is {act_to_encode}')
+                # print(f'The target activity is {act_to_encode}')
 
                 y_train = df_train[f'occ_{act_to_encode}']
                 y_test = df_test[f'occ_{act_to_encode}']
@@ -237,7 +251,7 @@ for exp_name in case_studies:
             elif kpi == 'outcome_pred':
 
                 precision, recall, f_score = precision_recall_fscore_support(y_test, y_pred, average='macro')[:3]
-                print(f"Quello che ti serve ora è {f_score} - {precision} - {recall}")
+                # print(f"Quello che ti serve ora è {f_score} - {precision} - {recall}")
                 f_scores.append(f_score)
                 precisions.append(precision)
                 recalls.append(recall)
@@ -266,12 +280,11 @@ for exp_name in case_studies:
             print('For the case study ', exp_name, 'with samples ', n_samples, 'F1 is ', round(np.mean(f_scores), 2), '± ', round(np.std(f_scores)),
                 'Precision is ', round(np.mean(precisions), 2), '± ', round(np.std(precisions), 2),
                 'Recall is ', round(np.mean(recalls), 2), '± ', round(np.std(recalls), 2))
-
+        print('the pre was', hparams['pre'])
 # print('train shape was ', X_train.shape, 'train columns were ', X_train.columns.tolist(),'and they were equal to the test columns? ', (X_train.columns==X_test.columns).all())
 
 if model is not None:
     del model
     print('model deleted')
-    print('the pre was', hparams['pre'])
+    
 # %%
-s

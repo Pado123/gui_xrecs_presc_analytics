@@ -157,6 +157,7 @@ class KNNPredictor:
               k_values: List[int] = None,
               cv_folds: int = 5,
               scoring: str = None,
+              verbose: int = 0,
               **kwargs) -> Dict[str, Any]:
         """
         Train the KNN model with hyperparameter cross-validation.
@@ -175,6 +176,8 @@ class KNNPredictor:
             Number of folds for cross-validation
         scoring : str, optional
             Scoring metric. Auto-selected based on task type if not provided
+        verbose : int, default=0
+            Verbosity level for GridSearchCV (0=silent, 1=progress, 2=detailed)
         **kwargs : dict
             Additional parameters for KNN model
             
@@ -286,11 +289,31 @@ class KNNPredictor:
             cv=cv, 
             scoring=scoring,
             n_jobs=-1,
-            return_train_score=True
+            return_train_score=True,
+            verbose=verbose
         )
+        
+        # Show progress for k values if verbose > 0
+        if verbose > 0:
+            print(f"Testing {len(k_values)} k values: {k_values}")
+            print(f"Using {cv_folds}-fold cross-validation")
         
         # Fit the grid search
         grid_search.fit(X_transformed, y)
+        
+        # Show results for all k values if verbose > 0
+        if verbose > 0:
+            print("\nCross-validation results for all k values:")
+            print("-" * 60)
+            cv_results_df = pd.DataFrame(grid_search.cv_results_)
+            for idx, k_val in enumerate(k_values):
+                param_idx = cv_results_df[cv_results_df['param_n_neighbors'] == k_val].index[0]
+                mean_score = cv_results_df.loc[param_idx, 'mean_test_score']
+                std_score = cv_results_df.loc[param_idx, 'std_test_score']
+                print(f"  k={k_val:2d}: {scoring}={mean_score:.4f} ± {std_score:.4f}")
+            print("-" * 60)
+            print(f"✓ Best k value: {grid_search.best_params_['n_neighbors']} with {scoring}={grid_search.best_score_:.4f} ± {grid_search.cv_results_['std_test_score'][grid_search.best_index_]:.4f}")
+            print()
         
         # Store results
         self.model = grid_search.best_estimator_
