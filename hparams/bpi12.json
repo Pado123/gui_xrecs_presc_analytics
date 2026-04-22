@@ -8,10 +8,10 @@
     "trace_attr": [
         "AMOUNT_REQ"
     ],
-    "pre": "analogical_att",
+    "pre": "all",
     "acts_not_freq": [
-        "W_Afhandelen leads",
         "W_Nabellen incomplete dossiers",
+        "W_Afhandelen leads",
         "W_Nabellen offertes",        
         "W_Valideren aanvraag",        
         "W_Beoordelen fraude",

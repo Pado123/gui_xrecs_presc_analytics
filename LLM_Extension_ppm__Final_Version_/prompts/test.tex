@@ -1,0 +1,36 @@
+\lstset{basicstyle=\fontsize{6.1}{8}\ttfamily, label={lst:test},
+caption={LLM’s output and reasoning returned after the prompting technique example for a loan application proces},
+captionpos=b, float=tb} % Adjust scale as needed
+\begin{lstlisting}
+[[ ## reasoning ## ]]
+The new case is for an application with a 'AMOUNT_REQ' of 18000.  The process instance 
+has executed activities 'W_Completeren aanvraag' and 'W_Nabellen offertes'.
+The process is currently 'Running'. 
+To predict the total time, we will look at historical cases with similar characteristics.
+
+1. Filter for similar Application Type and Requested Amount:
+   We focus on cases with 'AMOUNT_REQ' 
+   in a range around 18000.0 (e.g., 10000.0 to 25000.0) to find comparable instances.
+
+2. Identify relevant historical cases:
+   From the provided log, we select the cases that match 'AMOUNT_REQ' within the range of 10000.0 to 25000.0. 
+   We list their total times:
+   10000.0: 9713, 10000.0: 18803, 11500.0: 4771, 12000.0: 18924, 12000.0: 8102,
+   13000.0: 6645, 13000.0: 21550, 14000.0: 9713, 15000.0: 8049, 15000.0: 17011
+
+3. Calculate the median total time:
+   To get a robust estimate and reduce the impact of outliers, we calculate the median of these total times.
+   Sorted total times: 4771, 5299, 5975, 5975, 6645, 6645, 7432, 8049, 8102, 9713, 9713, 
+   12991, 13056, 17011, 17434, 18803, 18924, 19826, 21550, 71762.
+   71762 is detected as an outlier and it will be removed from the analysis.
+   Since there are 19 values, the median is the 10th value,
+   which is 9713. Median = 9713.
+
+4. Predict total time:
+   We use the median total time of the similar historical cases as our prediction
+   for the new running case.
+
+[[ ## answer ## ]]
+9713
+[[ ## completed ## ]]
+\end{lstlisting}

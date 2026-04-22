@@ -9,7 +9,7 @@
         "CLOSURE_TYPE",
         "CLOSURE_REASON"
     ],
-    "pre": "path_pred",
+    "pre": "similarity_times",
     "acts_not_freq": [
         "Service closure Request with BO responsibility",
         "Service closure Request with network responsibility",
